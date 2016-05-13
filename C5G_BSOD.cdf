@@ -4,7 +4,7 @@ JedecChain;
 	DefaultMfr(6E);
 
 	P ActionCode(Cfg)
-		Device PartName(5CGXFC5C6F27) Path("C:/Users/Joe Grand/Desktop/C5G_SystemBuilder_V101/CodeGenerated/C5G/C5G_BSOD/") File("C5G_BSOD.sof") MfrSpec(OpMask(1));
+		Device PartName(5CGXFC5C6F27) Path("Z:/C5G_BSOD/") File("C5G_BSOD.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 
