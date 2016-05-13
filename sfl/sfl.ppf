@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pinplan
+ variation_name="serial_flash_loader_0"
+ megafunction_name="ALTERA_SERIAL_FLASH_LOADER"
+ intended_family="Cyclone V"
+ specifies="all_ports">
+ <global>
+  <pin name="noe_in" direction="input" scope="external" />
+ </global>
+</pinplan>
