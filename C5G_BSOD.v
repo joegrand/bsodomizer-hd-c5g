@@ -90,8 +90,8 @@ reg state;
 //=======================================================
 
 wire altclk_out;
-wire clk148M_pll;
-wire reset_n;
+wire hdmi_tx_clk_148;
+wire hdmi_tx_pll_locked;
 
 // LPDDR2
 wire afi_clk; // clock for test controllers
@@ -104,9 +104,9 @@ wire fpga_lpddr2_local_init_done/*synthesis keep*/;
 wire fpga_lpddr2_local_cal_success/*synthesis keep*/;
 wire fpga_lpddr2_local_cal_fail/*synthesis keep*/;
 	
-wire  test_software_reset_n;
-wire  test_global_reset_n;   
-wire  test_start_n;  
+wire test_global_reset_n;
+wire test_soft_reset_n;
+wire test_start_n;  
 
 wire         	fpga_lpddr2_avl_ready;       	// avl.waitrequest_n
 wire         	fpga_lpddr2_avl_burstbegin;   //    .beginbursttransfer
@@ -123,8 +123,13 @@ wire 	[2:0]		fpga_lpddr2_avl_size;         //    .burstcount
 //  Assignments
 //=======================================================
 
-assign LEDG[7] = state; 	 // heartbeat for testing
-assign GPIO[30] = !SW[9];   // HDMI_SW (pass-through v. bsod mode select)
+assign LEDG[0] = state; 	// Heartbeat for testing
+
+assign RXnTX = SW[9]; 		// Mode select: TX (0), RX/capture (1)
+assign GPIO[30] = !RXnTX;	// HDMI_SW output to TS3DV642 HDMI Switch
+
+// blink LED until LPDDR2 RAM test is complete
+assign LEDG[1] = (fpga_lpddr2_local_init_done & fpga_lpddr2_local_cal_success) ? (fpga_lpddr2_test_complete ? fpga_lpddr2_test_pass : state):1'b0;
 
 assign fpga_lpddr2_avl_size = 3'b001;
 
@@ -142,14 +147,14 @@ ALTCLKCTRL clk (
 hdmi_tx_pll pll (
 	.refclk(altclk_out),
 	.rst(!CPU_RESET_n),
-	.outclk_0(clk148M_pll),
-	.locked(reset_n)
+	.outclk_0(hdmi_tx_clk_148),
+	.locked(hdmi_tx_pll_locked)
 );
 
 // ADV7513 HDMI Transceiver
 hdmi_tx_ctrl hdmi (
 	.clk(CLOCK_50_B5B),
-	.reset(1'b0),
+	.reset(!CPU_RESET_n),
 	.scl(I2C_SCL),
 	.sda(I2C_SDA),
 	.inttx(HDMI_TX_INT)
@@ -157,8 +162,8 @@ hdmi_tx_ctrl hdmi (
 
 // Video Generator
 top_sync_vg_pattern vg (
-	.clk_in(clk148M_pll), 				// PCLK (148.5MHz) sent into video generator
-	.resetb(reset_n),	
+	.clk_in(hdmi_tx_clk_148), 			// PCLK (148.5MHz) sent into video generator
+	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX),	// Start if TX mode selected and PLL is locked 
 	.adv7513_hs(HDMI_TX_HS),     		// HS (HSync) 
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)
 	.adv7513_clk(HDMI_TX_CLK),		   // PCLK
@@ -170,7 +175,7 @@ top_sync_vg_pattern vg (
 // ADV7611 HDMI Receiver
 //hdmi_rx_ctrl hdmi (
 //	.clk(CLOCK_50_B5B),
-//	.reset(1'b0),
+//	.reset(!CPU_RESET_n), 
 //	.scl(HDMI_RX_I2C_SCL),
 //	.sda(HDMI_RX_I2C_SDA),
 //	.intrx(HDMI_RX_INT)
@@ -178,7 +183,7 @@ top_sync_vg_pattern vg (
 
 // Video Receiver
 //top_sync_vr vr (
-//	.resetb(reset_n),	
+//	.resetb(CPU_RESET_n & RXnTX),			// Start if RX mode selected	
 //	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
 //	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
 //	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
@@ -189,8 +194,8 @@ top_sync_vg_pattern vg (
 	
 fpga_lpddr2 fpga_lpddr2_inst(
 /*input  wire       */   .pll_ref_clk(CLOCK_50_B5B),           	//	pll_ref_clk.clk
-/*input  wire       */   .global_reset_n(test_global_reset_n),    // global_reset.reset_n
-/*input  wire       */   .soft_reset_n(test_software_reset_n),    // soft_reset.reset_n
+/*input  wire       */   .global_reset_n(test_global_reset_n), 	// global_reset.reset_n
+/*input  wire       */   .soft_reset_n(test_software_reset_n), 	// soft_reset.reset_n
 /*output wire       */   .afi_clk(afi_clk),                    	// afi_clk.clk
 /*output wire       */   .afi_half_clk(afi_half_clk),             // afi_half_clk.clk
 /*output wire       */   .afi_reset_n(),                				// afi_reset.reset_n
@@ -262,7 +267,7 @@ Avalon_bus_RW_Test fpga_lpddr2_Verify(
 //		commmands-to-run-when-triggered;
 always @ (posedge CLOCK_50_B5B) 
 begin
-	if (reset_n)
+	if (CPU_RESET_n)
 		counter <= counter + 1;
 		state <= counter[26];
 end
@@ -286,17 +291,5 @@ assign test_software_reset_n=(sample[1:0]==2'b10)?1'b0:1'b1;
 assign test_global_reset_n   =(sample[3:2]==2'b10)?1'b0:1'b1;
 assign test_start_n         =(sample[4:3]==2'b01)?1'b0:1'b1;
 
-wire [2:0] test_result;
-assign test_result[0] = KEY[0];
-assign test_result[1] = (fpga_lpddr2_local_init_done& fpga_lpddr2_local_cal_success) ? (fpga_lpddr2_test_complete? fpga_lpddr2_test_pass : heart_beat[23]):1'b0;
-assign test_result[2] =  heart_beat[23];
-
-assign LEDG[2:0] = KEY[0]?test_result:3'b111;
-	
-reg [23:0] heart_beat;
-always @ (posedge CLOCK_50_B6A)
-begin
-	heart_beat <= heart_beat + 1;
-end
 
 endmodule
