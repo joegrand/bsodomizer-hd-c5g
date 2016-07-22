@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module sync_vg 
 #( 
   parameter X_BITS=12,  

@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module pattern_vg 
   #( 
     parameter B=8, // number of bits per channel 
@@ -15,7 +17,8 @@ module pattern_vg
    input wire [X_BITS-1:0] total_active_pix, 
    input wire [Y_BITS-1:0] total_active_lines, 
    input wire [7:0] pattern, 
-   input wire [B+FRACTIONAL_BITS-1:0] ramp_step); 
+   input wire [B+FRACTIONAL_BITS-1:0] ramp_step,
+	input wire [2:0] dip_sw); 
  
  
 //=======================================================
@@ -93,13 +96,7 @@ begin
  
   if (reset) 
      ramp_values <= 0; 
-  else if (pattern == 8'b0) // no pattern 
-    begin 
-      r_out <= r_in; 
-      g_out <= g_in; 
-      b_out <= b_in; 
-    end 
-  else if (pattern == 8'b1) // border 
+  else if (dip_sw == 3'b001) // border (thin white line around edge of frame)
     begin 
       if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) 
       begin 
@@ -114,7 +111,7 @@ begin
         b_out <= b_in; 
       end 
     end 
-  else if (pattern == 8'd2) // moireX 
+  else if (dip_sw == 3'b010) // moire vertical
   begin 
     if ((dn_in) && x[0] == 1'b1) 
     begin 
@@ -129,7 +126,7 @@ begin
       b_out <= 8'b0; 
     end 
   end 
-  else if (pattern == 8'd3) // moireY 
+  else if (dip_sw == 3'b011) // moire horizontal
   begin 
     if ((dn_in) && y[0] == 1'b1) 
     begin 
@@ -144,7 +141,7 @@ begin
       b_out <= 8'b0; 
     end 
   end 
-  else if (pattern == 8'd4) // Simple RAMP 
+  else if (dip_sw == 3'b100) // simple ramp (vertical greyscale shading, black to white)
   begin 
        r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
        g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
@@ -156,7 +153,7 @@ begin
        else if (dn_in) 
          ramp_values <= ramp_values + ramp_step; 
    end
-   else if (pattern == 8'd5) // PRNG 
+	else if (dip_sw == 3'b101) // PRNG (static)
    begin 	
 		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
 			load_init_pattern <= 1'b1;
@@ -178,13 +175,13 @@ begin
 			b_out <= 8'hFF; 
 		end
 	end
-	else if (pattern == 8'd6) // tesselated rainbow pattern
+	else if (dip_sw == 3'b110) // tesselated rainbow pattern
 	begin
 		r_out <= x;
 		g_out <= y;
 		b_out <= x + y;
 	end
-	else if (pattern == 8'd7) // image (1920 x 1080, packed 1bpp)
+	else if (dip_sw == 3'b111) // image (1920 x 1080, packed 1bpp)
 	begin
 		if (intram_q & (8'h80 >> ((x-1) % 8))) // unpack 1bpp image using a bitmask (x = current pixel on horizontal line)
 		begin
@@ -203,6 +200,12 @@ begin
 			b_out <= 8'hab;
 		end
 	end
+   else // no pattern (black screen)
+   begin 
+     r_out <= r_in; 
+     g_out <= g_in; 
+     b_out <= b_in; 
+   end 
  end 
  
  

@@ -8,6 +8,9 @@
 // Authors: Joe Grand [www.grandideastudio.com] and Zoz
 //
 
+// Define a delay of ''#1'' as 1 ns. Discretize the simulation in units of 1 ps. 
+`timescale 1ns / 1ps
+
 module C5G_BSOD(
 
 	//////////// CLOCK //////////
@@ -41,8 +44,8 @@ module C5G_BSOD(
 	inout 		          		I2C_SDA,
 
 	//////////// HDMI-RX //////////
-//	output		          		HDMI_RX_CLK,
-//	output		    [23:0]		HDMI_RX_D,
+//	input		   	       		HDMI_RX_CLK,
+//	input		    	[23:0]		HDMI_RX_D,
 //	output		          		HDMI_RX_DE,
 //	output		          		HDMI_RX_HS,
 //	input 		          		HDMI_RX_INT,
@@ -95,7 +98,7 @@ wire reset_n;
 //=======================================================
 
 assign LEDG[0] = state; 	 // heartbeat for testing
-assign GPIO[30] = !SW[0];   // HDMI_SW (pass-through v. bsod mode select)
+assign GPIO[30] = !SW[9];   // HDMI_SW (pass-through v. bsod mode select)
 
 
 //=======================================================
@@ -127,7 +130,8 @@ top_sync_vg_pattern vg (
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)
 	.adv7513_clk(HDMI_TX_CLK),		   // PCLK
 	.adv7513_d(HDMI_TX_D),			   // Data lines
-	.adv7513_de(HDMI_TX_DE)  			// Data enable
+	.adv7513_de(HDMI_TX_DE),  			// Data enable
+	.dip_sw(SW)								// DIP switches for pattern selection
 );
 
 // ADV7611 HDMI Receiver

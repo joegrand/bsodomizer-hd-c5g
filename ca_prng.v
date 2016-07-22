@@ -38,6 +38,8 @@
 // 
 //========================================================================
 
+`timescale 1ns / 1ps
+
 module ca_prng(
                input wire           clk,
                input wire           reset_n,
