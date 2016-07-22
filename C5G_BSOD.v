@@ -5,7 +5,7 @@
 // ---------
 // Top level wrapper for BSODomizer HD using the Cyclone V GX Starter Kit.
 //
-// Authors: Joe Grand and Zoz Brooks
+// Authors: Joe Grand [www.grandideastudio.com] and Zoz
 //
 
 module C5G_BSOD(
@@ -40,6 +40,18 @@ module C5G_BSOD(
 	output		          		I2C_SCL,
 	inout 		          		I2C_SDA,
 
+	//////////// HDMI-RX //////////
+//	output		          		HDMI_RX_CLK,
+//	output		    [23:0]		HDMI_RX_D,
+//	output		          		HDMI_RX_DE,
+//	output		          		HDMI_RX_HS,
+//	input 		          		HDMI_RX_INT,
+//	output		          		HDMI_RX_VS,
+//
+//	//////////// I2C for HDMI-RX //////////
+//	output		          		HDMI_RX_I2C_SCL,
+//	inout 		          		HDMI_RX_I2C_SDA,
+	
 	//////////// SDCARD //////////
 	output		          		SD_CLK,
 	inout 		          		SD_CMD,
@@ -83,7 +95,7 @@ wire reset_n;
 //=======================================================
 
 assign LEDG[0] = state; 	 // heartbeat for testing
-assign GPIO[22] = !SW[0];   // pass-through v. bsod mode select
+assign GPIO[30] = !SW[0];   // HDMI_SW (pass-through v. bsod mode select)
 
 
 //=======================================================
@@ -117,6 +129,25 @@ top_sync_vg_pattern vg (
 	.adv7513_d(HDMI_TX_D),			   // Data lines
 	.adv7513_de(HDMI_TX_DE)  			// Data enable
 );
+
+// ADV7611 HDMI Receiver
+//hdmi_rx_ctrl hdmi (
+//	.clk(CLOCK_50_B5B),
+//	.reset(1'b0),
+//	.scl(HDMI_RX_I2C_SCL),
+//	.sda(HDMI_RX_I2C_SDA),
+//	.intrx(HDMI_RX_INT)
+//);
+
+// Video Receiver
+//top_sync_vr vr (
+//	.resetb(reset_n),	
+//	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
+//	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
+//	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
+//	.adv7611_d(HDMI_RX_D),			   // Data lines
+//	.adv7611_de(HDMI_RX_DE)  			// Data enable
+//);
   	
 		
 //=======================================================
