@@ -143,9 +143,9 @@ begin
 	  			c_state <= 1;
 	  		end
       end
-		10 : c_state <= 11;  // break after writing (ignore reads)
+		10 : c_state <= 9;  // break after writing (ignore reads)
 			
-		11 : c_state <= 4;
+		/*11 : c_state <= 4;
 	  	4 : begin //read
 	  		//avl_writedata <= y; //sdc set multi-cycle 3  		
 	  		avl_read <= 1;
@@ -191,7 +191,7 @@ begin
 	  			avl_address <= avl_address + 1'b1;
 	  			c_state <= 4;
 	  		end
-	  	end
+	  	end*/
 		8 : c_state <= 8;
 		9 : c_state <= 9;
 	    default : c_state <= 0;

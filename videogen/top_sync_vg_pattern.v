@@ -11,13 +11,13 @@ module top_sync_vg_pattern (
 	input wire [2:0] dip_sw,		// SW 
 	
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
-	output reg  [26:0]  avl_address,       	//       .address
+	output wire  [26:0] avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
-	output reg  [31:0]  avl_writedata,     	//       .writedata
-	output reg          avl_read,          	//       .read
-	output reg          avl_write,         	//       .write
-	output reg			  avl_burstbegin			//			.burstbegin
+	output wire  [31:0] avl_writedata,     	//       .writedata
+	output wire         avl_read,          	//       .read
+	output wire         avl_write,         	//       .write
+	output wire			  avl_burstbegin			//			.burstbegin
 ); 
 /* ************************************* */ 
  

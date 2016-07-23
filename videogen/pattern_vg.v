@@ -43,6 +43,9 @@ module pattern_vg
 //  Registers
 //=======================================================
 
+// State machine
+reg  [3:0]   c_state;
+
 // PRNG 
 reg load_init_pattern;
 reg next_pattern;
@@ -57,8 +60,6 @@ reg intram_wren;*/
 
 // LPDDR2
 reg [31:0]   avl_q; 		// data read from memory
-
-reg  [3:0]   c_state;	// state machine
 
 
 //=======================================================
