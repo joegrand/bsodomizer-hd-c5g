@@ -20,14 +20,14 @@ module pattern_vg
    input wire [B+FRACTIONAL_BITS-1:0] ramp_step,
 	input wire [2:0] dip_sw,
 	
+	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
+	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
 	output reg  [26:0]  avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
-	output reg  [31:0]  avl_writedata,     	//       .writedata
 	output reg          avl_read,          	//       .read
-	output reg          avl_write,         	//       .write
-	output reg			  avl_burstbegin			//			.burstbegin
+	output wire			  avl_burstbegin			//			.burstbegin
 	);
 	
 //=======================================================
@@ -60,6 +60,7 @@ reg intram_wren;*/
 
 // LPDDR2
 reg [31:0]   avl_q; 		// data read from memory
+reg  [4:0]   write_count;
 
 
 //=======================================================
@@ -73,6 +74,8 @@ wire [31:0] prng_data; 	// PRNG output
 //=======================================================
 //  Assignments
 //=======================================================
+
+assign avl_burstbegin = avl_read;
 
 
 //=======================================================
@@ -103,7 +106,8 @@ ca_prng prng (
 //  Structural coding
 //=======================================================
 
-always @ (posedge clk_in) 
+//always @ (posedge clk_in) 
+always @ (posedge avl_clk) 
 begin 
   vn_out <= vn_in; 
   hn_out <= hn_in; 
@@ -111,65 +115,68 @@ begin
  
   if (reset) 
      ramp_values <= 0; 
-  else if (dip_sw == 3'b001) // border (thin white line around edge of frame)
-    begin 
-      if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) 
+  else
+    case (dip_sw)
+	 3'b000 : begin	// No pattern (black screen)
+		r_out <= r_in; 
+		g_out <= g_in; 
+		b_out <= b_in; 
+	 end
+	 3'b001 : begin	// border (thin white line around edge of frame)
+		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) 
       begin 
-        r_out <= 8'hFF; 
-        g_out <= 8'hFF; 
-        b_out <= 8'hFF; 
+			r_out <= 8'hFF; 
+			g_out <= 8'hFF; 
+			b_out <= 8'hFF; 
       end 
       else 
       begin 
-        r_out <= r_in; 
-        g_out <= g_in; 
-        b_out <= b_in; 
-      end 
-    end 
-  else if (dip_sw == 3'b010) // moire vertical
-  begin 
-    if ((dn_in) && x[0] == 1'b1) 
-    begin 
-      r_out <= 8'hFF; 
-      g_out <= 8'hFF; 
-      b_out <= 8'hFF; 
-    end 
-    else 
-    begin 
-      r_out <= 8'b0; 
-      g_out <= 8'b0; 
-      b_out <= 8'b0; 
-    end 
-  end 
-  else if (dip_sw == 3'b011) // moire horizontal
-  begin 
-    if ((dn_in) && y[0] == 1'b1) 
-    begin 
-      r_out <= 8'hFF; 
-      g_out <= 8'hFF; 
-      b_out <= 8'hFF; 
-    end 
-    else 
-    begin 
-      r_out <= 8'b0; 
-      g_out <= 8'b0; 
-      b_out <= 8'b0; 
-    end 
-  end 
-  else if (dip_sw == 3'b100) // simple ramp (vertical greyscale shading, black to white)
-  begin 
-       r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-       g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-       b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-       if ((x == total_active_pix -  1) && (dn_in)) 
-         ramp_values <= 0; 
-       else if ((x == 0) && (dn_in)) 
-         ramp_values <= ramp_step; 
-       else if (dn_in) 
-         ramp_values <= ramp_values + ramp_step; 
-   end
-	else if (dip_sw == 3'b101) // PRNG (static)
-   begin 	
+			r_out <= r_in; 
+			g_out <= g_in; 
+			b_out <= b_in; 
+      end 	 
+	 end
+	 3'b010 : begin	// moire vertical
+		if ((dn_in) && x[0] == 1'b1) 
+		begin 
+			r_out <= 8'hFF; 
+			g_out <= 8'hFF; 
+			b_out <= 8'hFF; 
+		end 
+		else 
+		begin 
+			r_out <= 8'b0; 
+			g_out <= 8'b0; 
+			b_out <= 8'b0; 
+		end	 
+	 end
+	 3'b011 : begin	// moire horizontal
+		if ((dn_in) && y[0] == 1'b1) 
+		begin 
+			r_out <= 8'hFF; 
+			g_out <= 8'hFF; 
+			b_out <= 8'hFF; 
+		end 
+		else 
+		begin 
+			r_out <= 8'b0; 
+			g_out <= 8'b0; 
+			b_out <= 8'b0; 
+		end 	 
+	 end
+	 3'b100 : begin	// simple ramp (vertical greyscale shading, black to white)
+		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+       
+		if ((x == total_active_pix - 1) && (dn_in)) 
+			ramp_values <= 0; 
+		else if ((x == 0) && (dn_in)) 
+			ramp_values <= ramp_step; 
+		else if (dn_in) 
+			ramp_values <= ramp_values + ramp_step;	 
+	 end
+	 3'b101 : begin	// PRNG (static)
 		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
 			load_init_pattern <= 1'b1;
 		else
@@ -188,22 +195,20 @@ begin
 			r_out <= 8'hFF; // white
 			g_out <= 8'hFF; 
 			b_out <= 8'hFF; 
-		end
-	end
-	else if (dip_sw == 3'b110) // tesselated rainbow pattern
-	begin
+		end	 
+	 end
+	 3'b110 : begin	// tesselated rainbow pattern
 		r_out <= x;
 		g_out <= y;
-		b_out <= x + y;
-	end
-	else if (dip_sw == 3'b111) // image (1920 x 1080, 8bpp)
-	begin
-	  r_out <= avl_q[23:16];
-	  g_out <= avl_q[15:8];
-	  b_out <= avl_q[7:0];
-	end
-	/*begin
-		if (intram_q & (8'h80 >> ((x-1) % 8))) // unpack 1bpp image using a bitmask (x = current pixel on horizontal line)
+		b_out <= x + y;	 
+	 end
+	 3'b111 : begin	// image (1920 x 1080, 8bpp)
+		r_out <= avl_q[23:16];
+		g_out <= avl_q[15:8];
+		b_out <= avl_q[7:0];	 
+	 end
+	 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
+		if (intram_q & (8'h80 >> ((x-1) % 8))) // unpack image using a bitmask (x = current pixel on horizontal line)
 		begin
 			r_out <= 8'hC0; 	// silver/white (BSOD, text)
 			g_out <= 8'hC0; 
@@ -220,51 +225,54 @@ begin
 			b_out <= 8'hab;
 		end
 	end*/
-   else // no pattern (black screen)
-   begin 
-     r_out <= r_in; 
-     g_out <= g_in; 
-     b_out <= b_in; 
-   end 
+	endcase
  end 
  
  
  
 ////////////	LPDDR2 ADDR Generator	////////////
 
-always @ (posedge clk_in)
+always @ (posedge avl_clk)
 begin	 
    if(reset)
    begin
-		avl_write <= 1'b0;
 		avl_read <= 1'b0;
 		avl_address <= 0;
 		c_state <= 4'b0;
+		write_count <= 5'b0;
    end
 	else
 	begin
-		avl_burstbegin = avl_write || avl_read;
 		case (c_state)
 		0 : begin // set memory address
-			if (avl_address > ('d1920 * 'd1080))
-				avl_address <= 0;
-			else
-				avl_address <= avl_address+1;
-				
-			c_state <= 1;
+			if (local_init_done)
+			begin
+				if (avl_address == ('d1920 * 'd1080))
+					avl_address <= 0;
+			
+				c_state <= 1;
+			end
 		end
 		1 : begin // assert read
 			avl_read <= 1;
-	
+
+			if (!write_count[3])
+	  			write_count <= write_count + 1'b1;
+				
 			// if read is done, go to the next state
 			if (avl_waitrequest_n)
 				c_state <= 2;
 		end
 		2 : begin // latch read data
 	  		avl_read <= 0;
+			
+			if (!write_count[3])
+	  			write_count <= write_count + 5'b1;
+				
 			if (avl_readdatavalid)
 			begin
 	  			avl_q <= avl_readdata;
+				avl_address <= avl_address+1;
 				c_state <= 0;
 			end
 	   end

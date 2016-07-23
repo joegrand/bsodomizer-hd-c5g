@@ -90,11 +90,12 @@ reg state;
 //=======================================================
 
 wire altclk_out;
-wire hdmi_tx_clk_148;
+wire hdmi_tx_clk_148_5;
+//wire hdmi_tx_clk_297; // 2x PCLK for use w/ LPDDR2 port 1 clock (each data read requires 2 clock cycles, so this keeps us in sync with HDMI TX)
 wire hdmi_tx_pll_locked;
 
 // LPDDR2
-wire afi_clk; // clock for test controllers
+wire afi_clk; // clocks used for Avalon_bus_RW_Test
 wire afi_half_clk;
 
 wire fpga_lpddr2_test_pass/*synthesis keep*/;
@@ -136,12 +137,13 @@ wire 	[2:0]		fpga_lpddr2_avl_1_size;         //    .burstcount
 assign LEDG[0] = state; 	// Heartbeat for testing
 
 assign RXnTX = SW[9]; 		// Mode select: TX (0), RX/capture (1)
-assign GPIO[30] = !RXnTX;	// HDMI_SW output to TS3DV642 HDMI Switch
+assign GPIO[30] = !RXnTX;	// HDMI_SW output to TS3DV642 HDMI Switch: Passthrough (0), FPGA (1)
 
 // blink LED until LPDDR2 RAM test is complete
-assign LEDG[1] = (fpga_lpddr2_local_init_done & fpga_lpddr2_local_cal_success) ? (fpga_lpddr2_test_complete ? fpga_lpddr2_test_pass : state):1'b0;
+assign LEDG[1] = (fpga_lpddr2_local_init_done & fpga_lpddr2_local_cal_success) ? (fpga_lpddr2_test_complete ? 1'b1 : state):1'b0;
 
-assign fpga_lpddr2_avl_size = 3'b001;
+assign fpga_lpddr2_avl_0_size = 3'b001;
+assign fpga_lpddr2_avl_1_size = 3'b001;
 
 
 //=======================================================
@@ -157,7 +159,8 @@ ALTCLKCTRL clk (
 hdmi_tx_pll pll (
 	.refclk(altclk_out),
 	.rst(!CPU_RESET_n),
-	.outclk_0(hdmi_tx_clk_148),
+	.outclk_0(hdmi_tx_clk_148_5),
+	//.outclk_1(hdmi_tx_clk_297),
 	.locked(hdmi_tx_pll_locked)
 );
 
@@ -172,22 +175,22 @@ hdmi_tx_ctrl hdmi (
 
 // Video Generator
 top_sync_vg_pattern vg (
-	.clk_in(hdmi_tx_clk_148), 			// PCLK (148.5MHz) sent into video generator
-	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_pass),	// Start if TX mode selected and PLL is locked 
+	.clk_in(hdmi_tx_clk_148_5), 		// PCLK (148.5MHz) sent into video generator
+	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_complete),	// Start if TX mode selected and PLL is locked 
 	.adv7513_hs(HDMI_TX_HS),     		// HS (HSync) 
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)
 	.adv7513_clk(HDMI_TX_CLK),		   // PCLK
 	.adv7513_d(HDMI_TX_D),			   // Data lines
 	.adv7513_de(HDMI_TX_DE),  			// Data enable
 	.dip_sw(SW),							// DIP switches for pattern selection
-	
-	.avl_waitrequest_n(fpga_lpddr2_avl_1_ready),  // LPDDR2               
+		
+	.avl_clk(afi_half_clk),				// LPDDR2 (read only)
+	.local_init_done(fpga_lpddr2_local_init_done), 
+	.avl_waitrequest_n(fpga_lpddr2_avl_1_ready),                 
 	.avl_address(fpga_lpddr2_avl_1_addr),                      
 	.avl_readdatavalid(fpga_lpddr2_avl_1_rdata_valid),                 
 	.avl_readdata(fpga_lpddr2_avl_1_rdata),                      
-	.avl_writedata(fpga_lpddr2_avl_1_wdata),                     
 	.avl_read(fpga_lpddr2_avl_1_read_req),                          
-	.avl_write(fpga_lpddr2_avl_1_write_req),    
 	.avl_burstbegin(fpga_lpddr2_avl_1_burstbegin)
 );
 
@@ -202,7 +205,7 @@ top_sync_vg_pattern vg (
 
 // Video Receiver
 //top_sync_vr vr (
-//	.resetb(CPU_RESET_n & RXnTX),			// Start if RX mode selected	
+//	.resetb(CPU_RESET_n & RXnTX),		// Start if RX mode selected	
 //	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
 //	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
 //	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
@@ -254,15 +257,16 @@ fpga_lpddr2 fpga_lpddr2_inst(
 
 /*input  wire       */   .mp_cmd_clk_0_clk(afi_half_clk),           			  // mp_cmd_clk_0.clk
 /*input  wire       */   .mp_cmd_reset_n_0_reset_n(test_software_reset_n),   // mp_cmd_reset_n_0.reset_n
-/*input  wire       */   .mp_cmd_clk_1_clk(afi_half_clk),           			  // mp_cmd_clk_1.clk
+/*input  wire       */   .mp_cmd_clk_1_clk(afi_half_clk),           		  	  // mp_cmd_clk_1.clk
 /*input  wire       */   .mp_cmd_reset_n_1_reset_n(test_software_reset_n),   // mp_cmd_reset_n_1.reset_n		
+
 /*input  wire       */   .mp_rfifo_clk_0_clk(afi_half_clk),         			  // mp_rfifo_clk_0.clk
 /*input  wire       */   .mp_rfifo_reset_n_0_reset_n(test_software_reset_n), // mp_rfifo_reset_n_0.reset_n
 /*input  wire       */   .mp_wfifo_clk_0_clk(afi_half_clk),         			  // mp_wfifo_clk_0.clk
 /*input  wire       */   .mp_wfifo_reset_n_0_reset_n(test_software_reset_n), // mp_wfifo_reset_n_0.reset_n
-/*input  wire       */   .mp_rfifo_clk_1_clk(afi_half_clk),         			  // mp_rfifo_clk_1.clk
+/*input  wire       */   .mp_rfifo_clk_1_clk(afi_half_clk),         		     // mp_rfifo_clk_1.clk
 /*input  wire       */   .mp_rfifo_reset_n_1_reset_n(test_software_reset_n), // mp_rfifo_reset_n_1.reset_n
-/*input  wire       */   .mp_wfifo_clk_1_clk(afi_half_clk),         			  // mp_wfifo_clk_1.clk
+/*input  wire       */   .mp_wfifo_clk_1_clk(afi_half_clk),         		     // mp_wfifo_clk_1.clk
 /*input  wire       */   .mp_wfifo_reset_n_1_reset_n(test_software_reset_n), // mp_wfifo_reset_n_1.reset_n	
 
 /*output wire       */   .local_init_done(fpga_lpddr2_local_init_done),      	// status.local_init_done
@@ -276,20 +280,15 @@ fpga_lpddr2 fpga_lpddr2_inst(
 Avalon_bus_RW_Test fpga_lpddr2_Verify(
 	.iCLK(afi_half_clk),
 	.iRST_n(test_software_reset_n),
-	.iBUTTON(test_start_n ),
+	.iBUTTON(test_start_n),
 
-	.local_init_done(fpga_lpddr2_local_init_done),
+	.local_init_done(fpga_lpddr2_local_init_done),  // LPDDR2 (write only)
 	.avl_waitrequest_n(fpga_lpddr2_avl_0_ready),                 
 	.avl_address(fpga_lpddr2_avl_0_addr),                      
-	.avl_readdatavalid(fpga_lpddr2_avl_0_rdata_valid),                 
-	.avl_readdata(fpga_lpddr2_avl_0_rdata),                      
 	.avl_writedata(fpga_lpddr2_avl_0_wdata),                     
-	.avl_read(fpga_lpddr2_avl_0_read_req),                          
 	.avl_write(fpga_lpddr2_avl_0_write_req),    
 	.avl_burstbegin(fpga_lpddr2_avl_0_burstbegin),
 		
-	.drv_status_pass(fpga_lpddr2_test_pass),
-	.drv_status_fail(fpga_lpddr2_test_fail),
 	.drv_status_test_complete(fpga_lpddr2_test_complete)	
 );
 
@@ -323,9 +322,9 @@ begin
 		sample[4:0]=sample[4:0];
 end
 
+// start-up/reset sequence for LPDDR2 port
 assign test_software_reset_n=(sample[1:0]==2'b10)?1'b0:1'b1;
 assign test_global_reset_n   =(sample[3:2]==2'b10)?1'b0:1'b1;
 assign test_start_n         =(sample[4:3]==2'b01)?1'b0:1'b1;
-
 
 endmodule

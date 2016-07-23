@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 
 module top_sync_vg_pattern ( 
-	input wire clk_in,  
-   input wire resetb,  
+	input  wire clk_in,  
+   input  wire resetb,  
    output reg adv7513_hs,       	// HSYNC 
    output reg adv7513_vs,       	// VSYNC 
    output wire adv7513_clk,      // CLK 
    output reg [23:0] adv7513_d,  // DATA 
    output reg adv7513_de,        // DE
-	input wire [2:0] dip_sw,		// SW 
+	input  wire [2:0] dip_sw,		// SW 
 	
+	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
+	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
 	output wire  [26:0] avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
-	input  wire [31:0]  avl_readdata,      	//       .readdata
-	output wire  [31:0] avl_writedata,     	//       .writedata
+	input  wire  [31:0] avl_readdata,      	//       .readdata
 	output wire         avl_read,          	//       .read
-	output wire         avl_write,         	//       .write
 	output wire			  avl_burstbegin			//			.burstbegin
 ); 
 /* ************************************* */ 
@@ -108,13 +108,13 @@ assign reset = !resetb;
 	  .pattern(PATTERN_TYPE),   
 	  .ramp_step(PATTERN_RAMP_STEP),
 	  .dip_sw(dip_sw),
-	  .avl_waitrequest_n(avl_waitrequest_n), // LPDDR2                
+	  .avl_clk(avl_clk),								// LPDDR2 (read only)
+	  .local_init_done(local_init_done),
+	  .avl_waitrequest_n(avl_waitrequest_n),                
 	  .avl_address(avl_address),                      
 	  .avl_readdatavalid(avl_readdatavalid),                 
 	  .avl_readdata(avl_readdata),                      
-	  .avl_writedata(avl_writedata),                     
 	  .avl_read(avl_read),                          
-	  .avl_write(avl_write),    
 	  .avl_burstbegin(avl_burstbegin)
 	  ); 
      
