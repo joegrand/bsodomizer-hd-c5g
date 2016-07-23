@@ -32,12 +32,28 @@ module fpga_lpddr2 (
 		input  wire        avl_read_req_0,             //                   .read
 		input  wire        avl_write_req_0,            //                   .write
 		input  wire [2:0]  avl_size_0,                 //                   .burstcount
+		output wire        avl_ready_1,                //              avl_1.waitrequest_n
+		input  wire        avl_burstbegin_1,           //                   .beginbursttransfer
+		input  wire [26:0] avl_addr_1,                 //                   .address
+		output wire        avl_rdata_valid_1,          //                   .readdatavalid
+		output wire [31:0] avl_rdata_1,                //                   .readdata
+		input  wire [31:0] avl_wdata_1,                //                   .writedata
+		input  wire [3:0]  avl_be_1,                   //                   .byteenable
+		input  wire        avl_read_req_1,             //                   .read
+		input  wire        avl_write_req_1,            //                   .write
+		input  wire [2:0]  avl_size_1,                 //                   .burstcount
 		input  wire        mp_cmd_clk_0_clk,           //       mp_cmd_clk_0.clk
 		input  wire        mp_cmd_reset_n_0_reset_n,   //   mp_cmd_reset_n_0.reset_n
+		input  wire        mp_cmd_clk_1_clk,           //       mp_cmd_clk_1.clk
+		input  wire        mp_cmd_reset_n_1_reset_n,   //   mp_cmd_reset_n_1.reset_n
 		input  wire        mp_rfifo_clk_0_clk,         //     mp_rfifo_clk_0.clk
 		input  wire        mp_rfifo_reset_n_0_reset_n, // mp_rfifo_reset_n_0.reset_n
 		input  wire        mp_wfifo_clk_0_clk,         //     mp_wfifo_clk_0.clk
 		input  wire        mp_wfifo_reset_n_0_reset_n, // mp_wfifo_reset_n_0.reset_n
+		input  wire        mp_rfifo_clk_1_clk,         //     mp_rfifo_clk_1.clk
+		input  wire        mp_rfifo_reset_n_1_reset_n, // mp_rfifo_reset_n_1.reset_n
+		input  wire        mp_wfifo_clk_1_clk,         //     mp_wfifo_clk_1.clk
+		input  wire        mp_wfifo_reset_n_1_reset_n, // mp_wfifo_reset_n_1.reset_n
 		output wire        local_init_done,            //             status.local_init_done
 		output wire        local_cal_success,          //                   .local_cal_success
 		output wire        local_cal_fail,             //                   .local_cal_fail
@@ -81,12 +97,28 @@ module fpga_lpddr2 (
 		.avl_read_req_0             (avl_read_req_0),             //                   .read
 		.avl_write_req_0            (avl_write_req_0),            //                   .write
 		.avl_size_0                 (avl_size_0),                 //                   .burstcount
+		.avl_ready_1                (avl_ready_1),                //              avl_1.waitrequest_n
+		.avl_burstbegin_1           (avl_burstbegin_1),           //                   .beginbursttransfer
+		.avl_addr_1                 (avl_addr_1),                 //                   .address
+		.avl_rdata_valid_1          (avl_rdata_valid_1),          //                   .readdatavalid
+		.avl_rdata_1                (avl_rdata_1),                //                   .readdata
+		.avl_wdata_1                (avl_wdata_1),                //                   .writedata
+		.avl_be_1                   (avl_be_1),                   //                   .byteenable
+		.avl_read_req_1             (avl_read_req_1),             //                   .read
+		.avl_write_req_1            (avl_write_req_1),            //                   .write
+		.avl_size_1                 (avl_size_1),                 //                   .burstcount
 		.mp_cmd_clk_0_clk           (mp_cmd_clk_0_clk),           //       mp_cmd_clk_0.clk
 		.mp_cmd_reset_n_0_reset_n   (mp_cmd_reset_n_0_reset_n),   //   mp_cmd_reset_n_0.reset_n
+		.mp_cmd_clk_1_clk           (mp_cmd_clk_1_clk),           //       mp_cmd_clk_1.clk
+		.mp_cmd_reset_n_1_reset_n   (mp_cmd_reset_n_1_reset_n),   //   mp_cmd_reset_n_1.reset_n
 		.mp_rfifo_clk_0_clk         (mp_rfifo_clk_0_clk),         //     mp_rfifo_clk_0.clk
 		.mp_rfifo_reset_n_0_reset_n (mp_rfifo_reset_n_0_reset_n), // mp_rfifo_reset_n_0.reset_n
 		.mp_wfifo_clk_0_clk         (mp_wfifo_clk_0_clk),         //     mp_wfifo_clk_0.clk
 		.mp_wfifo_reset_n_0_reset_n (mp_wfifo_reset_n_0_reset_n), // mp_wfifo_reset_n_0.reset_n
+		.mp_rfifo_clk_1_clk         (mp_rfifo_clk_1_clk),         //     mp_rfifo_clk_1.clk
+		.mp_rfifo_reset_n_1_reset_n (mp_rfifo_reset_n_1_reset_n), // mp_rfifo_reset_n_1.reset_n
+		.mp_wfifo_clk_1_clk         (mp_wfifo_clk_1_clk),         //     mp_wfifo_clk_1.clk
+		.mp_wfifo_reset_n_1_reset_n (mp_wfifo_reset_n_1_reset_n), // mp_wfifo_reset_n_1.reset_n
 		.local_init_done            (local_init_done),            //             status.local_init_done
 		.local_cal_success          (local_cal_success),          //                   .local_cal_success
 		.local_cal_fail             (local_cal_fail),             //                   .local_cal_fail
@@ -258,7 +290,7 @@ endmodule
 // Retrieval info: 	<generic name="CTL_CMD_QUEUE_DEPTH" value="8" />
 // Retrieval info: 	<generic name="CTL_CSR_READ_ONLY" value="1" />
 // Retrieval info: 	<generic name="CFG_DATA_REORDERING_TYPE" value="INTER_BANK" />
-// Retrieval info: 	<generic name="NUM_OF_PORTS" value="1" />
+// Retrieval info: 	<generic name="NUM_OF_PORTS" value="2" />
 // Retrieval info: 	<generic name="ENABLE_BONDING" value="false" />
 // Retrieval info: 	<generic name="ENABLE_USER_ECC" value="false" />
 // Retrieval info: 	<generic name="AVL_DATA_WIDTH_PORT" value="32,32,32,32,32,32" />
@@ -436,7 +468,7 @@ endmodule
 // Retrieval info: 	<generic name="NUM_DLL_SHARING_INTERFACES" value="1" />
 // Retrieval info: 	<generic name="OCT_SHARING_MODE" value="None" />
 // Retrieval info: 	<generic name="NUM_OCT_SHARING_INTERFACES" value="1" />
-// Retrieval info: 	<generic name="AUTO_DEVICE" value="Unknown" />
-// Retrieval info: 	<generic name="AUTO_DEVICE_SPEEDGRADE" value="Unknown" />
+// Retrieval info: 	<generic name="AUTO_DEVICE" value="5CEBA2F17A7" />
+// Retrieval info: 	<generic name="AUTO_DEVICE_SPEEDGRADE" value="7" />
 // Retrieval info: </instance>
 // IPFS_FILES : NONE

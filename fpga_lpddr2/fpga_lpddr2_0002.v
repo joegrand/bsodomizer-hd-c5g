@@ -33,12 +33,28 @@ module fpga_lpddr2_0002 (
 		input  wire        avl_read_req_0,             //                   .read
 		input  wire        avl_write_req_0,            //                   .write
 		input  wire [2:0]  avl_size_0,                 //                   .burstcount
+		output wire        avl_ready_1,                //              avl_1.waitrequest_n
+		input  wire        avl_burstbegin_1,           //                   .beginbursttransfer
+		input  wire [26:0] avl_addr_1,                 //                   .address
+		output wire        avl_rdata_valid_1,          //                   .readdatavalid
+		output wire [31:0] avl_rdata_1,                //                   .readdata
+		input  wire [31:0] avl_wdata_1,                //                   .writedata
+		input  wire [3:0]  avl_be_1,                   //                   .byteenable
+		input  wire        avl_read_req_1,             //                   .read
+		input  wire        avl_write_req_1,            //                   .write
+		input  wire [2:0]  avl_size_1,                 //                   .burstcount
 		input  wire        mp_cmd_clk_0_clk,           //       mp_cmd_clk_0.clk
 		input  wire        mp_cmd_reset_n_0_reset_n,   //   mp_cmd_reset_n_0.reset_n
+		input  wire        mp_cmd_clk_1_clk,           //       mp_cmd_clk_1.clk
+		input  wire        mp_cmd_reset_n_1_reset_n,   //   mp_cmd_reset_n_1.reset_n
 		input  wire        mp_rfifo_clk_0_clk,         //     mp_rfifo_clk_0.clk
 		input  wire        mp_rfifo_reset_n_0_reset_n, // mp_rfifo_reset_n_0.reset_n
 		input  wire        mp_wfifo_clk_0_clk,         //     mp_wfifo_clk_0.clk
 		input  wire        mp_wfifo_reset_n_0_reset_n, // mp_wfifo_reset_n_0.reset_n
+		input  wire        mp_rfifo_clk_1_clk,         //     mp_rfifo_clk_1.clk
+		input  wire        mp_rfifo_reset_n_1_reset_n, // mp_rfifo_reset_n_1.reset_n
+		input  wire        mp_wfifo_clk_1_clk,         //     mp_wfifo_clk_1.clk
+		input  wire        mp_wfifo_reset_n_1_reset_n, // mp_wfifo_reset_n_1.reset_n
 		output wire        local_init_done,            //             status.local_init_done
 		output wire        local_cal_success,          //                   .local_cal_success
 		output wire        local_cal_fail,             //                   .local_cal_fail
@@ -302,13 +318,13 @@ module fpga_lpddr2_0002 (
 		.MSB_WFIFO_PORT_0                        (0),
 		.LSB_RFIFO_PORT_0                        (0),
 		.MSB_RFIFO_PORT_0                        (0),
-		.AVL_DATA_WIDTH_PORT_1                   (1),
-		.AVL_ADDR_WIDTH_PORT_1                   (1),
-		.AVL_NUM_SYMBOLS_PORT_1                  (1),
-		.LSB_WFIFO_PORT_1                        (5),
-		.MSB_WFIFO_PORT_1                        (5),
-		.LSB_RFIFO_PORT_1                        (5),
-		.MSB_RFIFO_PORT_1                        (5),
+		.AVL_DATA_WIDTH_PORT_1                   (32),
+		.AVL_ADDR_WIDTH_PORT_1                   (27),
+		.AVL_NUM_SYMBOLS_PORT_1                  (4),
+		.LSB_WFIFO_PORT_1                        (1),
+		.MSB_WFIFO_PORT_1                        (1),
+		.LSB_RFIFO_PORT_1                        (1),
+		.MSB_RFIFO_PORT_1                        (1),
 		.AVL_DATA_WIDTH_PORT_2                   (1),
 		.AVL_ADDR_WIDTH_PORT_2                   (1),
 		.AVL_NUM_SYMBOLS_PORT_2                  (1),
@@ -359,7 +375,7 @@ module fpga_lpddr2_0002 (
 		.ENUM_CLOCK_OFF_5                        ("DISABLED"),
 		.ENUM_CLR_INTR                           ("NO_CLR_INTR"),
 		.ENUM_CMD_PORT_IN_USE_0                  ("TRUE"),
-		.ENUM_CMD_PORT_IN_USE_1                  ("FALSE"),
+		.ENUM_CMD_PORT_IN_USE_1                  ("TRUE"),
 		.ENUM_CMD_PORT_IN_USE_2                  ("FALSE"),
 		.ENUM_CMD_PORT_IN_USE_3                  ("FALSE"),
 		.ENUM_CMD_PORT_IN_USE_4                  ("FALSE"),
@@ -369,9 +385,9 @@ module fpga_lpddr2_0002 (
 		.ENUM_CPORT0_TYPE                        ("BI_DIRECTION"),
 		.ENUM_CPORT0_WFIFO_MAP                   ("FIFO_0"),
 		.ENUM_CPORT1_RDY_ALMOST_FULL             ("NOT_FULL"),
-		.ENUM_CPORT1_RFIFO_MAP                   ("FIFO_0"),
-		.ENUM_CPORT1_TYPE                        ("DISABLE"),
-		.ENUM_CPORT1_WFIFO_MAP                   ("FIFO_0"),
+		.ENUM_CPORT1_RFIFO_MAP                   ("FIFO_1"),
+		.ENUM_CPORT1_TYPE                        ("BI_DIRECTION"),
+		.ENUM_CPORT1_WFIFO_MAP                   ("FIFO_1"),
 		.ENUM_CPORT2_RDY_ALMOST_FULL             ("NOT_FULL"),
 		.ENUM_CPORT2_RFIFO_MAP                   ("FIFO_0"),
 		.ENUM_CPORT2_TYPE                        ("DISABLE"),
@@ -514,17 +530,17 @@ module fpga_lpddr2_0002 (
 		.ENUM_RCFG_USER_PRIORITY_4               ("PRIORITY_1"),
 		.ENUM_RCFG_USER_PRIORITY_5               ("PRIORITY_1"),
 		.ENUM_RD_DWIDTH_0                        ("DWIDTH_32"),
-		.ENUM_RD_DWIDTH_1                        ("DWIDTH_0"),
+		.ENUM_RD_DWIDTH_1                        ("DWIDTH_32"),
 		.ENUM_RD_DWIDTH_2                        ("DWIDTH_0"),
 		.ENUM_RD_DWIDTH_3                        ("DWIDTH_0"),
 		.ENUM_RD_DWIDTH_4                        ("DWIDTH_0"),
 		.ENUM_RD_DWIDTH_5                        ("DWIDTH_0"),
 		.ENUM_RD_FIFO_IN_USE_0                   ("TRUE"),
-		.ENUM_RD_FIFO_IN_USE_1                   ("FALSE"),
+		.ENUM_RD_FIFO_IN_USE_1                   ("TRUE"),
 		.ENUM_RD_FIFO_IN_USE_2                   ("FALSE"),
 		.ENUM_RD_FIFO_IN_USE_3                   ("FALSE"),
 		.ENUM_RD_PORT_INFO_0                     ("USE_0"),
-		.ENUM_RD_PORT_INFO_1                     ("USE_NO"),
+		.ENUM_RD_PORT_INFO_1                     ("USE_1"),
 		.ENUM_RD_PORT_INFO_2                     ("USE_NO"),
 		.ENUM_RD_PORT_INFO_3                     ("USE_NO"),
 		.ENUM_RD_PORT_INFO_4                     ("USE_NO"),
@@ -532,7 +548,7 @@ module fpga_lpddr2_0002 (
 		.ENUM_READ_ODT_CHIP                      ("ODT_DISABLED"),
 		.ENUM_REORDER_DATA                       ("DATA_REORDERING"),
 		.ENUM_RFIFO0_CPORT_MAP                   ("CMD_PORT_0"),
-		.ENUM_RFIFO1_CPORT_MAP                   ("CMD_PORT_0"),
+		.ENUM_RFIFO1_CPORT_MAP                   ("CMD_PORT_1"),
 		.ENUM_RFIFO2_CPORT_MAP                   ("CMD_PORT_0"),
 		.ENUM_RFIFO3_CPORT_MAP                   ("CMD_PORT_0"),
 		.ENUM_SINGLE_READY_0                     ("CONCATENATE_RDY"),
@@ -577,24 +593,24 @@ module fpga_lpddr2_0002 (
 		.ENUM_USER_PRIORITY_5                    ("PRIORITY_1"),
 		.ENUM_WFIFO0_CPORT_MAP                   ("CMD_PORT_0"),
 		.ENUM_WFIFO0_RDY_ALMOST_FULL             ("NOT_FULL"),
-		.ENUM_WFIFO1_CPORT_MAP                   ("CMD_PORT_0"),
+		.ENUM_WFIFO1_CPORT_MAP                   ("CMD_PORT_1"),
 		.ENUM_WFIFO1_RDY_ALMOST_FULL             ("NOT_FULL"),
 		.ENUM_WFIFO2_CPORT_MAP                   ("CMD_PORT_0"),
 		.ENUM_WFIFO2_RDY_ALMOST_FULL             ("NOT_FULL"),
 		.ENUM_WFIFO3_CPORT_MAP                   ("CMD_PORT_0"),
 		.ENUM_WFIFO3_RDY_ALMOST_FULL             ("NOT_FULL"),
 		.ENUM_WR_DWIDTH_0                        ("DWIDTH_32"),
-		.ENUM_WR_DWIDTH_1                        ("DWIDTH_0"),
+		.ENUM_WR_DWIDTH_1                        ("DWIDTH_32"),
 		.ENUM_WR_DWIDTH_2                        ("DWIDTH_0"),
 		.ENUM_WR_DWIDTH_3                        ("DWIDTH_0"),
 		.ENUM_WR_DWIDTH_4                        ("DWIDTH_0"),
 		.ENUM_WR_DWIDTH_5                        ("DWIDTH_0"),
 		.ENUM_WR_FIFO_IN_USE_0                   ("TRUE"),
-		.ENUM_WR_FIFO_IN_USE_1                   ("FALSE"),
+		.ENUM_WR_FIFO_IN_USE_1                   ("TRUE"),
 		.ENUM_WR_FIFO_IN_USE_2                   ("FALSE"),
 		.ENUM_WR_FIFO_IN_USE_3                   ("FALSE"),
 		.ENUM_WR_PORT_INFO_0                     ("USE_0"),
-		.ENUM_WR_PORT_INFO_1                     ("USE_NO"),
+		.ENUM_WR_PORT_INFO_1                     ("USE_1"),
 		.ENUM_WR_PORT_INFO_2                     ("USE_NO"),
 		.ENUM_WR_PORT_INFO_3                     ("USE_NO"),
 		.ENUM_WR_PORT_INFO_4                     ("USE_NO"),
@@ -676,10 +692,16 @@ module fpga_lpddr2_0002 (
 		.ctl_clk                 (p0_ctl_clk_clk),                     //            ctl_clk.clk
 		.mp_cmd_clk_0            (mp_cmd_clk_0_clk),                   //       mp_cmd_clk_0.clk
 		.mp_cmd_reset_n_0        (mp_cmd_reset_n_0_reset_n),           //   mp_cmd_reset_n_0.reset_n
+		.mp_cmd_clk_1            (mp_cmd_clk_1_clk),                   //       mp_cmd_clk_1.clk
+		.mp_cmd_reset_n_1        (mp_cmd_reset_n_1_reset_n),           //   mp_cmd_reset_n_1.reset_n
 		.mp_rfifo_clk_0          (mp_rfifo_clk_0_clk),                 //     mp_rfifo_clk_0.clk
 		.mp_rfifo_reset_n_0      (mp_rfifo_reset_n_0_reset_n),         // mp_rfifo_reset_n_0.reset_n
 		.mp_wfifo_clk_0          (mp_wfifo_clk_0_clk),                 //     mp_wfifo_clk_0.clk
 		.mp_wfifo_reset_n_0      (mp_wfifo_reset_n_0_reset_n),         // mp_wfifo_reset_n_0.reset_n
+		.mp_rfifo_clk_1          (mp_rfifo_clk_1_clk),                 //     mp_rfifo_clk_1.clk
+		.mp_rfifo_reset_n_1      (mp_rfifo_reset_n_1_reset_n),         // mp_rfifo_reset_n_1.reset_n
+		.mp_wfifo_clk_1          (mp_wfifo_clk_1_clk),                 //     mp_wfifo_clk_1.clk
+		.mp_wfifo_reset_n_1      (mp_wfifo_reset_n_1_reset_n),         // mp_wfifo_reset_n_1.reset_n
 		.avl_ready_0             (avl_ready_0),                        //              avl_0.waitrequest_n
 		.avl_burstbegin_0        (avl_burstbegin_0),                   //                   .beginbursttransfer
 		.avl_addr_0              (avl_addr_0),                         //                   .address
@@ -690,6 +712,16 @@ module fpga_lpddr2_0002 (
 		.avl_read_req_0          (avl_read_req_0),                     //                   .read
 		.avl_write_req_0         (avl_write_req_0),                    //                   .write
 		.avl_size_0              (avl_size_0),                         //                   .burstcount
+		.avl_ready_1             (avl_ready_1),                        //              avl_1.waitrequest_n
+		.avl_burstbegin_1        (avl_burstbegin_1),                   //                   .beginbursttransfer
+		.avl_addr_1              (avl_addr_1),                         //                   .address
+		.avl_rdata_valid_1       (avl_rdata_valid_1),                  //                   .readdatavalid
+		.avl_rdata_1             (avl_rdata_1),                        //                   .readdata
+		.avl_wdata_1             (avl_wdata_1),                        //                   .writedata
+		.avl_be_1                (avl_be_1),                           //                   .byteenable
+		.avl_read_req_1          (avl_read_req_1),                     //                   .read
+		.avl_write_req_1         (avl_write_req_1),                    //                   .write
+		.avl_size_1              (avl_size_1),                         //                   .burstcount
 		.local_init_done         (local_init_done),                    //             status.local_init_done
 		.local_cal_success       (local_cal_success),                  //                   .local_cal_success
 		.local_cal_fail          (local_cal_fail),                     //                   .local_cal_fail
@@ -736,8 +768,6 @@ module fpga_lpddr2_0002 (
 		.cfg_twr                 (c0_hard_phy_cfg_cfg_twr),            //                   .cfg_twr
 		.io_intaficalfail        (p0_io_int_io_intaficalfail),         //             io_int.io_intaficalfail
 		.io_intaficalsuccess     (p0_io_int_io_intaficalsuccess),      //                   .io_intaficalsuccess
-		.mp_cmd_clk_1            (1'b0),                               //        (terminated)
-		.mp_cmd_reset_n_1        (1'b1),                               //        (terminated)
 		.mp_cmd_clk_2            (1'b0),                               //        (terminated)
 		.mp_cmd_reset_n_2        (1'b1),                               //        (terminated)
 		.mp_cmd_clk_3            (1'b0),                               //        (terminated)
@@ -746,10 +776,6 @@ module fpga_lpddr2_0002 (
 		.mp_cmd_reset_n_4        (1'b1),                               //        (terminated)
 		.mp_cmd_clk_5            (1'b0),                               //        (terminated)
 		.mp_cmd_reset_n_5        (1'b1),                               //        (terminated)
-		.mp_rfifo_clk_1          (1'b0),                               //        (terminated)
-		.mp_rfifo_reset_n_1      (1'b1),                               //        (terminated)
-		.mp_wfifo_clk_1          (1'b0),                               //        (terminated)
-		.mp_wfifo_reset_n_1      (1'b1),                               //        (terminated)
 		.mp_rfifo_clk_2          (1'b0),                               //        (terminated)
 		.mp_rfifo_reset_n_2      (1'b1),                               //        (terminated)
 		.mp_wfifo_clk_2          (1'b0),                               //        (terminated)
@@ -760,16 +786,6 @@ module fpga_lpddr2_0002 (
 		.mp_wfifo_reset_n_3      (1'b1),                               //        (terminated)
 		.csr_clk                 (1'b0),                               //        (terminated)
 		.csr_reset_n             (1'b1),                               //        (terminated)
-		.avl_ready_1             (),                                   //        (terminated)
-		.avl_burstbegin_1        (1'b0),                               //        (terminated)
-		.avl_addr_1              (1'b0),                               //        (terminated)
-		.avl_rdata_valid_1       (),                                   //        (terminated)
-		.avl_rdata_1             (),                                   //        (terminated)
-		.avl_wdata_1             (1'b0),                               //        (terminated)
-		.avl_be_1                (1'b0),                               //        (terminated)
-		.avl_read_req_1          (1'b0),                               //        (terminated)
-		.avl_write_req_1         (1'b0),                               //        (terminated)
-		.avl_size_1              (3'b000),                             //        (terminated)
 		.avl_ready_2             (),                                   //        (terminated)
 		.avl_burstbegin_2        (1'b0),                               //        (terminated)
 		.avl_addr_2              (1'b0),                               //        (terminated)

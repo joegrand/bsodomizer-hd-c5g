@@ -170,14 +170,15 @@ top_sync_vg_pattern vg (
 	.adv7513_d(HDMI_TX_D),			   // Data lines
 	.adv7513_de(HDMI_TX_DE),  			// Data enable
 	.dip_sw(SW),							// DIP switches for pattern selection
-	.avl_waitrequest_n(fpga_lpddr2_avl_ready),  // LPDDR2               
-	.avl_address(fpga_lpddr2_avl_addr),                      
-	.avl_readdatavalid(fpga_lpddr2_avl_rdata_valid),                 
-	.avl_readdata(fpga_lpddr2_avl_rdata),                      
-	.avl_writedata(fpga_lpddr2_avl_wdata),                     
-	.avl_read(fpga_lpddr2_avl_read_req),                          
-	.avl_write(fpga_lpddr2_avl_write_req),    
-	.avl_burstbegin(fpga_lpddr2_avl_burstbegin)
+	
+	.avl_waitrequest_n(fpga_lpddr2_avl_1_ready),  // LPDDR2               
+	.avl_address(fpga_lpddr2_avl_1_addr),                      
+	.avl_readdatavalid(fpga_lpddr2_avl_1_rdata_valid),                 
+	.avl_readdata(fpga_lpddr2_avl_1_rdata),                      
+	.avl_writedata(fpga_lpddr2_avl_1_wdata),                     
+	.avl_read(fpga_lpddr2_avl_1_read_req),                          
+	.avl_write(fpga_lpddr2_avl_1_write_req),    
+	.avl_burstbegin(fpga_lpddr2_avl_1_burstbegin)
 );
 
 // ADV7611 HDMI Receiver
@@ -219,24 +220,41 @@ fpga_lpddr2 fpga_lpddr2_inst(
 /*inout  wire [3:0] */   .mem_dqs(DDR2LP_DQS_p),                  //       .mem_dqs
 /*inout  wire [3:0] */   .mem_dqs_n(DDR2LP_DQS_n),                //       .mem_dqs_n
 		
-/*inout  wire [3:0] */   .avl_ready_0(fpga_lpddr2_avl_ready),           	// avl_0.waitrequest_n
-/*input  wire       */   .avl_burstbegin_0(fpga_lpddr2_avl_burstbegin),    //      .beginbursttransfer
-/*input  wire [26:0]*/   .avl_addr_0(fpga_lpddr2_avl_addr),                //      .address
-/*output wire       */   .avl_rdata_valid_0(fpga_lpddr2_avl_rdata_valid),  //      .readdatavalid
-/*output wire [31:0]*/   .avl_rdata_0(fpga_lpddr2_avl_rdata),              //      .readdata
-/*input  wire [31:0]*/   .avl_wdata_0(fpga_lpddr2_avl_wdata),              //      .writedata
-/*input  wire [3:0] */   .avl_be_0(4'hF),                   					//      .byteenable
-/*input  wire       */   .avl_read_req_0(fpga_lpddr2_avl_read_req),        //      .read
-/*input  wire       */   .avl_write_req_0(fpga_lpddr2_avl_write_req),      //      .write
-/*input  wire [2:0] */   .avl_size_0(fpga_lpddr2_avl_size),                //      .burstcount
-		
-/*input  wire       */   .mp_cmd_clk_0_clk(afi_half_clk),           			// mp_cmd_clk_0.clk
-/*input  wire       */   .mp_cmd_reset_n_0_reset_n(test_software_reset_n), // mp_cmd_reset_n_0.reset_n
-/*input  wire       */   .mp_rfifo_clk_0_clk(afi_half_clk),         			// mp_rfifo_clk_0.clk
-/*input  wire       */   .mp_rfifo_reset_n_0_reset_n(test_software_reset_n), 	// mp_rfifo_reset_n_0.reset_n
-/*input  wire       */   .mp_wfifo_clk_0_clk(afi_half_clk),         			  	// mp_wfifo_clk_0.clk
-/*input  wire       */   .mp_wfifo_reset_n_0_reset_n(test_software_reset_n), 	// mp_wfifo_reset_n_0.reset_n
-		
+/*inout  wire [3:0] */   .avl_ready_0(fpga_lpddr2_avl_0_ready),           	  // avl_0.waitrequest_n
+/*input  wire       */   .avl_burstbegin_0(fpga_lpddr2_avl_0_burstbegin),    //      .beginbursttransfer
+/*input  wire [26:0]*/   .avl_addr_0(fpga_lpddr2_avl_0_addr),                //      .address
+/*output wire       */   .avl_rdata_valid_0(fpga_lpddr2_avl_0_rdata_valid),  //      .readdatavalid
+/*output wire [31:0]*/   .avl_rdata_0(fpga_lpddr2_avl_0_rdata),              //      .readdata
+/*input  wire [31:0]*/   .avl_wdata_0(fpga_lpddr2_avl_0_wdata),              //      .writedata
+/*input  wire [3:0] */   .avl_be_0(4'hF),                   					  //      .byteenable
+/*input  wire       */   .avl_read_req_0(fpga_lpddr2_avl_0_read_req),        //      .read
+/*input  wire       */   .avl_write_req_0(fpga_lpddr2_avl_0_write_req),      //      .write
+/*input  wire [2:0] */   .avl_size_0(fpga_lpddr2_avl_0_size),                //      .burstcount
+	
+/*inout wire [3:0]  */   .avl_ready_1(fpga_lpddr2_avl_1_ready),              // avl_1.waitrequest_n
+/*input  wire       */	 .avl_burstbegin_1(fpga_lpddr2_avl_1_burstbegin),    //      .beginbursttransfer
+/*input  wire [26:0]*/   .avl_addr_1(fpga_lpddr2_avl_1_addr),                //      .address
+/*output wire       */   .avl_rdata_valid_1(fpga_lpddr2_avl_1_rdata_valid),  //      .readdatavalid
+/*output wire [31:0]*/   .avl_rdata_1(fpga_lpddr2_avl_1_rdata),              //      .readdata
+/*input  wire [31:0]*/   .avl_wdata_1(fpga_lpddr2_avl_1_wdata),              //      .writedata
+/*input  wire [3:0] */   .avl_be_1(4'hF),                   					  //      .byteenable
+/*input  wire       */   .avl_read_req_1(fpga_lpddr2_avl_1_read_req),        //      .read
+/*input  wire       */   .avl_write_req_1(fpga_lpddr2_avl_1_write_req),      //      .write
+/*input  wire [2:0] */   .avl_size_1(fpga_lpddr2_avl_1_size),                //      .burstcount
+
+/*input  wire       */   .mp_cmd_clk_0_clk(afi_half_clk),           			  // mp_cmd_clk_0.clk
+/*input  wire       */   .mp_cmd_reset_n_0_reset_n(test_software_reset_n),   // mp_cmd_reset_n_0.reset_n
+/*input  wire       */   .mp_cmd_clk_1_clk(afi_half_clk),           			  // mp_cmd_clk_1.clk
+/*input  wire       */   .mp_cmd_reset_n_1_reset_n(test_software_reset_n),   // mp_cmd_reset_n_1.reset_n		
+/*input  wire       */   .mp_rfifo_clk_0_clk(afi_half_clk),         			  // mp_rfifo_clk_0.clk
+/*input  wire       */   .mp_rfifo_reset_n_0_reset_n(test_software_reset_n), // mp_rfifo_reset_n_0.reset_n
+/*input  wire       */   .mp_wfifo_clk_0_clk(afi_half_clk),         			  // mp_wfifo_clk_0.clk
+/*input  wire       */   .mp_wfifo_reset_n_0_reset_n(test_software_reset_n), // mp_wfifo_reset_n_0.reset_n
+/*input  wire       */   .mp_rfifo_clk_1_clk(afi_half_clk),         			  // mp_rfifo_clk_1.clk
+/*input  wire       */   .mp_rfifo_reset_n_1_reset_n(test_software_reset_n), // mp_rfifo_reset_n_1.reset_n
+/*input  wire       */   .mp_wfifo_clk_1_clk(afi_half_clk),         			  // mp_wfifo_clk_1.clk
+/*input  wire       */   .mp_wfifo_reset_n_1_reset_n(test_software_reset_n), // mp_wfifo_reset_n_1.reset_n	
+
 /*output wire       */   .local_init_done(fpga_lpddr2_local_init_done),      	// status.local_init_done
 /*output wire       */   .local_cal_success(fpga_lpddr2_local_cal_success),  	//       .local_cal_success
 /*output wire       */   .local_cal_fail(fpga_lpddr2_local_cal_fail),        	//       .local_cal_fail
@@ -251,14 +269,14 @@ Avalon_bus_RW_Test fpga_lpddr2_Verify(
 	.iBUTTON(test_start_n ),
 
 	.local_init_done(fpga_lpddr2_local_init_done),
-	.avl_waitrequest_n(fpga_lpddr2_avl_ready),                 
-	.avl_address(fpga_lpddr2_avl_addr),                      
-	.avl_readdatavalid(fpga_lpddr2_avl_rdata_valid),                 
-	.avl_readdata(fpga_lpddr2_avl_rdata),                      
-	.avl_writedata(fpga_lpddr2_avl_wdata),                     
-	.avl_read(fpga_lpddr2_avl_read_req),                          
-	.avl_write(fpga_lpddr2_avl_write_req),    
-	.avl_burstbegin(fpga_lpddr2_avl_burstbegin),
+	.avl_waitrequest_n(fpga_lpddr2_avl_0_ready),                 
+	.avl_address(fpga_lpddr2_avl_0_addr),                      
+	.avl_readdatavalid(fpga_lpddr2_avl_0_rdata_valid),                 
+	.avl_readdata(fpga_lpddr2_avl_0_rdata),                      
+	.avl_writedata(fpga_lpddr2_avl_0_wdata),                     
+	.avl_read(fpga_lpddr2_avl_0_read_req),                          
+	.avl_write(fpga_lpddr2_avl_0_write_req),    
+	.avl_burstbegin(fpga_lpddr2_avl_0_burstbegin),
 		
 	.drv_status_pass(fpga_lpddr2_test_pass),
 	.drv_status_fail(fpga_lpddr2_test_fail),
