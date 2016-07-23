@@ -18,16 +18,25 @@ module pattern_vg
    input wire [Y_BITS-1:0] total_active_lines, 
    input wire [7:0] pattern, 
    input wire [B+FRACTIONAL_BITS-1:0] ramp_step,
-	input wire [2:0] dip_sw); 
- 
- 
+	input wire [2:0] dip_sw,
+	
+	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
+	output reg  [26:0]  avl_address,       	//       .address
+	input  wire         avl_readdatavalid, 	//       .readdatavalid
+	input  wire [31:0]  avl_readdata,      	//       .readdata
+	output reg  [31:0]  avl_writedata,     	//       .writedata
+	output reg          avl_read,          	//       .read
+	output reg          avl_write,         	//       .write
+	output reg			  avl_burstbegin			//			.burstbegin
+	);
+	
 //=======================================================
 //  Constant declarations
 //=======================================================
 
-parameter	INTRAM_DATA_WIDTH	=	8;			//	8 bits/word
+//parameter	INTRAM_DATA_WIDTH	=	8;			//	8 bits/word
 //parameter	INTRAM_DATA_NUM	=	259200;	// 1920 * 1080 / 8	
-parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
+//parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
 
 
  //=======================================================
@@ -42,17 +51,22 @@ reg next_pattern;
 reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp values 
 
 // Internal RAM
-reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
+/*reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
 reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
-reg intram_wren;
+reg intram_wren;*/
 
-	
+// LPDDR2
+reg [31:0]   avl_q; 		// data read from memory
+
+reg  [3:0]   c_state;	// state machine
+
+
 //=======================================================
 //  Wires
 //=======================================================
 
 wire [31:0] prng_data; 	// PRNG output
-wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
+//wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
 
 
 //=======================================================
@@ -75,13 +89,13 @@ ca_prng prng (
 );
 
 // Internal RAM (1-port)
-int_ram	int_ram_inst (
+/*int_ram	int_ram_inst (
 	.address (intram_address),
 	.clock (clk_in),
 	.data (intram_data_in),
 	.wren (intram_wren),
 	.q (intram_q)
-);
+);*/
 
  
 //=======================================================
@@ -181,8 +195,13 @@ begin
 		g_out <= y;
 		b_out <= x + y;
 	end
-	else if (dip_sw == 3'b111) // image (1920 x 1080, packed 1bpp)
+	else if (dip_sw == 3'b111) // image (1920 x 1080, 8bpp)
 	begin
+	  r_out <= avl_q[23:16];
+	  g_out <= avl_q[15:8];
+	  b_out <= avl_q[7:0];
+	end
+	/*begin
 		if (intram_q & (8'h80 >> ((x-1) % 8))) // unpack 1bpp image using a bitmask (x = current pixel on horizontal line)
 		begin
 			r_out <= 8'hC0; 	// silver/white (BSOD, text)
@@ -191,15 +210,15 @@ begin
 		end
 		else
 		begin
-			/*r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
-			g_out <= 8'h0; 
-			b_out <= 8'h80;*/
+			//r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
+			//g_out <= 8'h0; 
+			//b_out <= 8'h80;
 			
 			r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
 			g_out <= 8'h71; 
 			b_out <= 8'hab;
 		end
-	end
+	end*/
    else // no pattern (black screen)
    begin 
      r_out <= r_in; 
@@ -209,8 +228,52 @@ begin
  end 
  
  
+ 
+////////////	LPDDR2 ADDR Generator	////////////
+
+always @ (posedge clk_in)
+begin	 
+   if(reset)
+   begin
+		avl_write <= 1'b0;
+		avl_read <= 1'b0;
+		avl_address <= 0;
+		c_state <= 4'b0;
+   end
+	else
+	begin
+		avl_burstbegin = avl_write || avl_read;
+		case (c_state)
+		0 : begin // set memory address
+			if (avl_address > ('d1920 * 'd1080))
+				avl_address <= 0;
+			else
+				avl_address <= avl_address+1;
+				
+			c_state <= 1;
+		end
+		1 : begin // assert read
+			avl_read <= 1;
+	
+			// if read is done, go to the next state
+			if (avl_waitrequest_n)
+				c_state <= 2;
+		end
+		2 : begin // latch read data
+	  		avl_read <= 0;
+			if (avl_readdatavalid)
+			begin
+	  			avl_q <= avl_readdata;
+				c_state <= 0;
+			end
+	   end
+		default : c_state <= 0;
+	   endcase
+	end
+end	  
+		
 ////////////	SRAM ADDR Generator	  ////////////
-always @ (negedge clk_in)
+/*always @ (negedge clk_in)
 begin	 
 	if(reset)
 	begin
@@ -229,7 +292,7 @@ begin
 				intram_address <= 0;
 	  end
 	end
-end
+end*/
 
 
 endmodule

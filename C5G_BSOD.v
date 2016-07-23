@@ -163,13 +163,21 @@ hdmi_tx_ctrl hdmi (
 // Video Generator
 top_sync_vg_pattern vg (
 	.clk_in(hdmi_tx_clk_148), 			// PCLK (148.5MHz) sent into video generator
-	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX),	// Start if TX mode selected and PLL is locked 
+	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_pass),	// Start if TX mode selected and PLL is locked 
 	.adv7513_hs(HDMI_TX_HS),     		// HS (HSync) 
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)
 	.adv7513_clk(HDMI_TX_CLK),		   // PCLK
 	.adv7513_d(HDMI_TX_D),			   // Data lines
 	.adv7513_de(HDMI_TX_DE),  			// Data enable
-	.dip_sw(SW)								// DIP switches for pattern selection
+	.dip_sw(SW),							// DIP switches for pattern selection
+	.avl_waitrequest_n(fpga_lpddr2_avl_ready),  // LPDDR2               
+	.avl_address(fpga_lpddr2_avl_addr),                      
+	.avl_readdatavalid(fpga_lpddr2_avl_rdata_valid),                 
+	.avl_readdata(fpga_lpddr2_avl_rdata),                      
+	.avl_writedata(fpga_lpddr2_avl_wdata),                     
+	.avl_read(fpga_lpddr2_avl_read_req),                          
+	.avl_write(fpga_lpddr2_avl_write_req),    
+	.avl_burstbegin(fpga_lpddr2_avl_burstbegin)
 );
 
 // ADV7611 HDMI Receiver

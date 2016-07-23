@@ -114,15 +114,15 @@ begin
 	  		end
 	  	end
 	  	1 : begin //write
-	  		avl_writedata <= y; //sdc set multi-cycle 3
-	  		if (write_count[3])
+	  		avl_writedata <= 32'hAA55AA55;//y; //sdc set multi-cycle 3
+	  		/*if (write_count[3])
 	  		begin
-	  			write_count <= 5'b0;
+	  			write_count <= 5'b0;*/
 	  		  avl_write <= 1'b1;
 	  		  c_state <= 2;
-	  		end
+	  		/*end
 	  	  else
-	  	  	write_count <= write_count + 1'b1;
+	  	  	write_count <= write_count + 1'b1;*/
 	  	end
 	  	2 : begin //finish write one data
 	  		if (avl_waitrequest_n)
@@ -143,14 +143,15 @@ begin
 	  			c_state <= 1;
 	  		end
       end
-		10 : c_state <= 11;
+		10 : c_state <= 11;  // break after writing (ignore reads)
+			
 		11 : c_state <= 4;
 	  	4 : begin //read
-	  		avl_writedata <= y; //sdc set multi-cycle 3  		
+	  		//avl_writedata <= y; //sdc set multi-cycle 3  		
 	  		avl_read <= 1;
 	  		
-	  		if (!write_count[3])
-	  			write_count <= write_count + 1'b1;
+	  		//if (!write_count[3])
+	  		//	write_count <= write_count + 1'b1;
 	  		
 	  		if (avl_waitrequest_n)
 	  			c_state <= 5;
@@ -158,8 +159,8 @@ begin
 	  	5 : begin //latch read data
 	  		avl_read <= 0;
  		
-	  		if (!write_count[3])
-	  			write_count <= write_count + 5'b1;
+	  		//if (!write_count[3])
+	  		//	write_count <= write_count + 5'b1;
 
 	  		if (avl_readdatavalid)
 	  		begin
@@ -168,16 +169,16 @@ begin
         end
 	  	end
 	  	6 : begin //finish compare one data
-	  		if (write_count[3])
-	  		begin
-	  			write_count <= 5'b0;
+	  		//if (write_count[3])
+	  		//begin
+	  		//	write_count <= 5'b0;
 	  			if (same)
 	  				c_state <= 7;
 	  			else
 	  				c_state <= 8;
-        end
-        else
-        	write_count <= write_count + 1'b1;
+        //end
+        //else
+        	//write_count <= write_count + 1'b1;
 	  	end
 	  	7 : begin
 	  	  if (max_avl_address) //finish compare all 
