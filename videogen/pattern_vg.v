@@ -106,132 +106,160 @@ ca_prng prng (
 //  Structural coding
 //=======================================================
 
-always @ (posedge clk_in) 
-begin 
-  vn_out <= vn_in; 
-  hn_out <= hn_in; 
-  den_out <= dn_in; 
- 
-  if (reset) 
-     ramp_values <= 0; 
-  else
+reg read_state;
+
+/* Its debatable practice to use "always@() begin" rather than not using begin
+ * and only using the "if(reset) ... else ... end" structure since it does not
+ * inherently prevent people from adding code that can take place outside of
+ * the reset/un-reset code paths which results in sequential logic that ALWAYS
+ * gets run.
+ *
+ * Reset should also be in sensitivity list along with clock. Best practice is
+ * is asynchronous reset, synchronous un-reset.  Adding reset to the
+ * sensitivity list ensures peripherals receive an async reset.
+ */
+always @ (posedge clk_in or posedge reset) begin 
+  if (reset) begin
+    /* There should always be a reset state defined for each signal that is
+     * modified in the unreset state of the sequential logic block
+     */
+    ramp_values <= 0; 
+    vn_out <= 1'b0;
+    hn_out <= 1'b0;
+    den_out <= 1'b0;
+    r_out <= 8'h00;
+    g_out <= 8'h00;
+    b_out <= 8'h00;
+    load_init_pattern <= 1'b0;
+    next_pattern <= 1'b0;
+    read_state <= 1'b0;
+    avl_read <= 1'b0;
+    avl_address <= 27'h0;
+  end else begin
+    vn_out <= vn_in; 
+    hn_out <= hn_in; 
+    den_out <= dn_in;
+    
     case (dip_sw)
-	 3'b000 : begin	// No pattern (black screen)
-		r_out <= r_in; 
-		g_out <= g_in; 
-		b_out <= b_in; 
-	 end
-	 3'b001 : begin	// border (thin white line around edge of frame)
-		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) 
-      begin 
-			r_out <= 8'hFF; 
-			g_out <= 8'hFF; 
-			b_out <= 8'hFF; 
-      end 
-      else 
-      begin 
-			r_out <= r_in; 
-			g_out <= g_in; 
-			b_out <= b_in; 
+    3'b000 : begin	// No pattern (black screen)
+      r_out <= r_in; 
+      g_out <= g_in; 
+      b_out <= b_in; 
+    end
+    3'b001 : begin	// border (thin white line around edge of frame)
+      if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
+        r_out <= 8'hFF; 
+        g_out <= 8'hFF; 
+        b_out <= 8'hFF; 
+      end else begin
+        r_out <= r_in; 
+        g_out <= g_in; 
+        b_out <= b_in; 
       end 	 
-	 end
-	 3'b010 : begin	// moire vertical
-		if ((dn_in) && x[0] == 1'b1) 
-		begin 
-			r_out <= 8'hFF; 
-			g_out <= 8'hFF; 
-			b_out <= 8'hFF; 
-		end 
-		else 
-		begin 
-			r_out <= 8'b0; 
-			g_out <= 8'b0; 
-			b_out <= 8'b0; 
-		end	 
-	 end
-	 3'b011 : begin	// moire horizontal
-		if ((dn_in) && y[0] == 1'b1) 
-		begin 
-			r_out <= 8'hFF; 
-			g_out <= 8'hFF; 
-			b_out <= 8'hFF; 
-		end 
-		else 
-		begin 
-			r_out <= 8'b0; 
-			g_out <= 8'b0; 
-			b_out <= 8'b0; 
-		end 	 
-	 end
-	 3'b100 : begin	// simple ramp (vertical greyscale shading, black to white)
-		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-       
-		if ((x == total_active_pix - 1) && (dn_in)) 
-			ramp_values <= 0; 
-		else if ((x == 0) && (dn_in)) 
-			ramp_values <= ramp_step; 
-		else if (dn_in) 
-			ramp_values <= ramp_values + ramp_step;	 
-	 end
-	 3'b101 : begin	// PRNG (static)
-		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
-			load_init_pattern <= 1'b1;
-		else
-		begin
-			load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
-			next_pattern      <= 1'b1;
-		end
-		if (prng_data > 'h23456789)   // set threshold for selecting black or white pixels
-		begin
-			r_out <= 8'h0; // black
-			g_out <= 8'h0; 
-			b_out <= 8'h0;  
-		end
-		else
-		begin
-			r_out <= 8'hFF; // white
-			g_out <= 8'hFF; 
-			b_out <= 8'hFF; 
-		end	 
-	 end
-	 3'b110 : begin	// tesselated rainbow pattern
-		r_out <= x;
-		g_out <= y;
-		b_out <= x + y;	 
-	 end
-	 3'b111 : begin	// image (1920 x 1080, 8bpp)
-		r_out <= avl_q[23:16];
-		g_out <= avl_q[15:8];
-		b_out <= avl_q[7:0];	 
-	 end
-	 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
-		if (intram_q & (8'h80 >> ((x-1) % 8))) // unpack image using a bitmask (x = current pixel on horizontal line)
-		begin
-			r_out <= 8'hC0; 	// silver/white (BSOD, text)
-			g_out <= 8'hC0; 
-			b_out <= 8'hC0; 
-		end
-		else
-		begin
-			//r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
-			//g_out <= 8'h0; 
-			//b_out <= 8'h80;
-			
-			r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
-			g_out <= 8'h71; 
-			b_out <= 8'hab;
-		end
-	end*/
-	endcase
- end 
+    end
+    3'b010 : begin	// moire vertical
+      if ((dn_in) && x[0] == 1'b1) begin 
+        r_out <= 8'hFF; 
+        g_out <= 8'hFF; 
+        b_out <= 8'hFF; 
+      end else begin
+        r_out <= 8'b0; 
+        g_out <= 8'b0; 
+        b_out <= 8'b0; 
+     end	 
+    end
+    3'b011 : begin	// moire horizontal
+      if ((dn_in) && y[0] == 1'b1) begin 
+        r_out <= 8'hFF; 
+        g_out <= 8'hFF; 
+        b_out <= 8'hFF; 
+      end else begin 
+        r_out <= 8'b0; 
+        g_out <= 8'b0; 
+        b_out <= 8'b0; 
+      end 	 
+    end
+    3'b100 : begin	// simple ramp (vertical greyscale shading, black to white)
+      r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+      g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+      b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+      if ((x == total_active_pix - 1) && (dn_in))
+        ramp_values <= 0; 
+      else if ((x == 0) && (dn_in)) 
+        ramp_values <= ramp_step; 
+      else if (dn_in) 
+        ramp_values <= ramp_values + ramp_step;	 
+    end
+    3'b101 : begin	// PRNG (static)
+      if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
+        load_init_pattern <= 1'b1;
+      else begin
+        load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
+        next_pattern      <= 1'b1;
+      end
+      if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
+        r_out <= 8'h0; // black
+        g_out <= 8'h0; 
+        b_out <= 8'h0;  
+      end else begin
+        r_out <= 8'hFF; // white
+        g_out <= 8'hFF; 
+        b_out <= 8'hFF; 
+      end	 
+    end
+    3'b110 : begin	// tesselated rainbow pattern
+      r_out <= x;
+      g_out <= y;
+      b_out <= x + y;	 
+    end
+    3'b111 : begin	// image (1920 x 1080, 8bpp)
+      /* This is based on the original code below, however there may be a 
+       * problem here.  This loop would require a zero cycle turn around time
+       * on the bus which I don't think the SDRAM can support.
+       * Would need to review docs on Avalon and the LPDDR2 IP.
+       * The code below used avl_readdatavalid as a bus cycle ack, which could
+       * delay for an unknown amount of time, causing screen glitches.
+       * depending on the glitches seen previously, the aforementioned could be
+       * part of the problem.
+       */
+      if(read_state) begin
+        avl_read <= 1'b0;
+        if(avl_readdatavalid) begin
+          r_out <= avl_readdata[23:16];
+          g_out <= avl_readdata[15:8];
+          b_out <= avl_readdata[7:0];
+          if(avl_address == 21'h1FEEFF) avl_address <= 'h0;
+          else avl_address <= avl_address + 1'b1;
+          read_state <= 1'b0;
+        end
+      end else begin
+        avl_read <= 1'b1;
+        read_state <= 1'b1;
+      end
+    end
+    /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
+      if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
+        r_out <= 8'hC0; 	// silver/white (BSOD, text)
+        g_out <= 8'hC0; 
+        b_out <= 8'hC0; 
+      end else begin
+        //r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
+        //g_out <= 8'h0; 
+        //b_out <= 8'h80;
+        r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
+        g_out <= 8'h71; 
+        b_out <= 8'hab;
+      end
+    end*/
+    endcase
+  end
+end 
  
  
  
 ////////////	LPDDR2 ADDR Generator	////////////
 
-always @ (posedge avl_clk)
+/*always @ (posedge avl_clk)
 begin	 
    if(reset)
    begin
@@ -278,7 +306,7 @@ begin
 		default : c_state <= 0;
 	   endcase
 	end
-end	  
+end */	  
 		
 ////////////	SRAM ADDR Generator	  ////////////
 /*always @ (negedge clk_in)
