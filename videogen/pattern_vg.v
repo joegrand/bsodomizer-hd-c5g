@@ -106,8 +106,7 @@ ca_prng prng (
 //  Structural coding
 //=======================================================
 
-//always @ (posedge clk_in) 
-always @ (posedge avl_clk) 
+always @ (posedge clk_in) 
 begin 
   vn_out <= vn_in; 
   hn_out <= hn_in; 
