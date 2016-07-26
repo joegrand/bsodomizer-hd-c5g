@@ -23,7 +23,7 @@ module pattern_vg
 	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
 	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
-	output reg  [26:0]  avl_address,       	//       .address
+	output wire  [26:0]  avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
 	output reg          avl_read,          	//       .read
@@ -44,7 +44,8 @@ module pattern_vg
 //=======================================================
 
 // State machine
-reg  [3:0]   c_state;
+//reg  [3:0]   c_state;
+reg read_state;
 
 // PRNG 
 reg load_init_pattern;
@@ -52,6 +53,7 @@ reg next_pattern;
 
 // Pattern generator
 reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp values 
+reg [7:0] ramp_counter; // 8-bit counter
 
 // Internal RAM
 /*reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
@@ -60,7 +62,8 @@ reg intram_wren;*/
 
 // LPDDR2
 reg [31:0]   avl_q; 		// data read from memory
-reg  [4:0]   write_count;
+//reg  [4:0]   write_count;
+reg  [26:0]  avl_address_old;
 
 
 //=======================================================
@@ -76,6 +79,8 @@ wire [31:0] prng_data; 	// PRNG output
 //=======================================================
 
 assign avl_burstbegin = avl_read;
+
+assign avl_address = x + (y * 'd1080); // Address needs to be synchronized to the current pixel location
 
 
 //=======================================================
@@ -106,8 +111,6 @@ ca_prng prng (
 //  Structural coding
 //=======================================================
 
-reg read_state;
-
 /* Its debatable practice to use "always@() begin" rather than not using begin
  * and only using the "if(reset) ... else ... end" structure since it does not
  * inherently prevent people from adding code that can take place outside of
@@ -118,15 +121,16 @@ reg read_state;
  * is asynchronous reset, synchronous un-reset.  Adding reset to the
  * sensitivity list ensures peripherals receive an async reset.
  */
-always @ (posedge clk_in or posedge reset) begin 
-  if (reset) begin
+always @ (posedge avl_clk or posedge reset) begin 
+  if (reset) 
+  begin
     /* There should always be a reset state defined for each signal that is
      * modified in the unreset state of the sequential logic block
      */
     ramp_values <= 0; 
-    vn_out <= 1'b0;
-    hn_out <= 1'b0;
-    den_out <= 1'b0;
+    //vn_out <= 1'b0;
+    //hn_out <= 1'b0;
+    //den_out <= 1'b0;
     r_out <= 8'h00;
     g_out <= 8'h00;
     b_out <= 8'h00;
@@ -134,30 +138,33 @@ always @ (posedge clk_in or posedge reset) begin
     next_pattern <= 1'b0;
     read_state <= 1'b0;
     avl_read <= 1'b0;
-    avl_address <= 27'h0;
-  end else begin
-    vn_out <= vn_in; 
-    hn_out <= hn_in; 
-    den_out <= dn_in;
+    //avl_address <= 27'h0;
+	 avl_address_old <= 27'h0;
+  end 
+  else 
+  begin
+    //vn_out <= vn_in; 
+    //hn_out <= hn_in; 
+    //den_out <= dn_in;
     
     case (dip_sw)
-    3'b000 : begin	// No pattern (black screen)
-      r_out <= r_in; 
-      g_out <= g_in; 
-      b_out <= b_in; 
+    3'b000 : begin	// no pattern (black screen)
+      r_out <= 8'b0; 
+      g_out <= 8'b0; 
+      b_out <= 8'b0; 
     end
     3'b001 : begin	// border (thin white line around edge of frame)
-      if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
-        r_out <= 8'hFF; 
-        g_out <= 8'hFF; 
-        b_out <= 8'hFF; 
-      end else begin
-        r_out <= r_in; 
-        g_out <= g_in; 
-        b_out <= b_in; 
-      end 	 
+		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
+			r_out <= 8'hFF; 
+			g_out <= 8'hFF; 
+			b_out <= 8'hFF; 
+		end else begin
+			r_out <= 8'b0; 
+			g_out <= 8'b0; 
+			b_out <= 8'b0;
+		end 
     end
-    3'b010 : begin	// moire vertical
+    3'b010 : begin	// moire vertical (alternate black and white pixels every other x)
       if ((dn_in) && x[0] == 1'b1) begin 
         r_out <= 8'hFF; 
         g_out <= 8'hFF; 
@@ -168,7 +175,7 @@ always @ (posedge clk_in or posedge reset) begin
         b_out <= 8'b0; 
      end	 
     end
-    3'b011 : begin	// moire horizontal
+    3'b011 : begin	// moire horizontal (alternate black and white pixels every other y)
       if ((dn_in) && y[0] == 1'b1) begin 
         r_out <= 8'hFF; 
         g_out <= 8'hFF; 
@@ -179,39 +186,87 @@ always @ (posedge clk_in or posedge reset) begin
         b_out <= 8'b0; 
       end 	 
     end
-    3'b100 : begin	// simple ramp (vertical greyscale shading, black to white)
-      r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-      g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-      b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-      if ((x == total_active_pix - 1) && (dn_in))
-        ramp_values <= 0; 
-      else if ((x == 0) && (dn_in)) 
-        ramp_values <= ramp_step; 
-      else if (dn_in) 
-        ramp_values <= ramp_values + ramp_step;	 
+    3'b100 : begin	// ramp (vertical greyscale shading, black to white)
+		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		if ((x == total_active_pix - 1) && (dn_in))
+		  ramp_values <= 0; 
+		else if ((x == 0) && (dn_in)) 
+		  ramp_values <= ramp_step; 
+		else if (dn_in) 
+		  ramp_values <= ramp_values + ramp_step;
     end
     3'b101 : begin	// PRNG (static)
-      if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
-        load_init_pattern <= 1'b1;
-      else begin
-        load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
-        next_pattern      <= 1'b1;
-      end
-      if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
-        r_out <= 8'h0; // black
-        g_out <= 8'h0; 
-        b_out <= 8'h0;  
-      end else begin
-        r_out <= 8'hFF; // white
-        g_out <= 8'hFF; 
-        b_out <= 8'hFF; 
-      end	 
+		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
+		  load_init_pattern <= 1'b1;
+		else begin
+		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
+		  next_pattern      <= 1'b1;
+		end
+		if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
+		  r_out <= 8'h0; // black
+		  g_out <= 8'h0; 
+		  b_out <= 8'h0;  
+		end else begin
+		  r_out <= 8'hFF; // white
+		  g_out <= 8'hFF; 
+		  b_out <= 8'hFF; 
+		end	 
     end
-    3'b110 : begin	// tesselated rainbow pattern
+    /*3'b110 : begin	// tesselated rainbow pattern
       r_out <= x;
       g_out <= y;
       b_out <= x + y;	 
-    end
+    end*/
+	 3'b110 : begin // color bar pattern
+	   if (dn_in) begin
+			if (x <= 275) begin // 100% white
+			  r_out <= 8'hFF; 
+			  g_out <= 8'hFF; 
+			  b_out <= 8'hFF; 
+			end 
+			else if (x >= 276 && x <= 549) begin // yellow
+			  r_out <= 8'hFF; 
+			  g_out <= 8'hFF; 
+			  b_out <= 8'h00; 
+			end	  
+			else if (x >= 550 && x <= 823) begin // cyan
+			  r_out <= 8'h00; 
+			  g_out <= 8'hFF; 
+			  b_out <= 8'hFF; 
+			end 		
+			else if (x >= 824 && x <= 1097) begin // green
+			  r_out <= 8'h00; 
+			  g_out <= 8'hFF; 
+			  b_out <= 8'h00; 
+			end 		
+			else if (x >= 1098 && x <= 1371) begin // magenta
+			  r_out <= 8'hFF; 
+			  g_out <= 8'h00; 
+			  b_out <= 8'hFF; 
+			end 		
+			else if (x >= 1372 && x <= 1645) begin // red
+			  r_out <= 8'hFF; 
+			  g_out <= 8'h00; 
+			  b_out <= 8'h00; 
+			end 		
+			else if (x >= 1646 && x <= 1919) begin // blue
+			  r_out <= 8'h00; 
+			  g_out <= 8'h00; 
+			  b_out <= 8'hFF; 
+			end 
+			else begin // black
+			  r_out <= 8'h00; 
+			  g_out <= 8'h00; 
+			  b_out <= 8'h00; 
+			end
+		end else begin 
+        r_out <= 8'b0; 
+        g_out <= 8'b0; 
+        b_out <= 8'b0;
+		end
+	 end
     3'b111 : begin	// image (1920 x 1080, 8bpp)
       /* This is based on the original code below, however there may be a 
        * problem here.  This loop would require a zero cycle turn around time
@@ -222,20 +277,36 @@ always @ (posedge clk_in or posedge reset) begin
        * depending on the glitches seen previously, the aforementioned could be
        * part of the problem.
        */
-      if(read_state) begin
-        avl_read <= 1'b0;
-        if(avl_readdatavalid) begin
-          r_out <= avl_readdata[23:16];
-          g_out <= avl_readdata[15:8];
-          b_out <= avl_readdata[7:0];
-          if(avl_address == 21'h1FEEFF) avl_address <= 'h0;
-          else avl_address <= avl_address + 1'b1;
-          read_state <= 1'b0;
-        end
-      end else begin
-        avl_read <= 1'b1;
-        read_state <= 1'b1;
-      end
+		 case (read_state)
+		 0 : begin
+		   if (local_init_done)
+			begin
+				avl_read <= 1'b1; // assert read request
+				if (avl_waitrequest_n)  // if read is done, go to the next state
+					read_state <= 1'b1;		 
+			end
+		 end
+		 1 : begin
+         if(avl_readdatavalid) // latch read data
+		   begin
+			//if (dn_in) begin
+			if (avl_address_old != avl_address) begin
+           r_out <= avl_readdata[23:16];
+           g_out <= avl_readdata[15:8];
+           b_out <= avl_readdata[7:0];
+           avl_address_old <= avl_address;
+						 
+	 		  avl_read <= 1'b0;
+			  read_state <= 1'b0;
+		   end
+         /*end else begin 
+				r_out <= 8'b0; 
+				g_out <= 8'b0; 
+				b_out <= 8'b0;
+		   end*/
+         end
+		 end
+		 endcase
     end
     /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
       if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
@@ -254,8 +325,7 @@ always @ (posedge clk_in or posedge reset) begin
     endcase
   end
 end 
- 
- 
+  
  
 ////////////	LPDDR2 ADDR Generator	////////////
 
@@ -282,9 +352,6 @@ begin
 		end
 		1 : begin // assert read
 			avl_read <= 1;
-
-			if (!write_count[3])
-	  			write_count <= write_count + 1'b1;
 				
 			// if read is done, go to the next state
 			if (avl_waitrequest_n)
@@ -292,9 +359,6 @@ begin
 		end
 		2 : begin // latch read data
 	  		avl_read <= 0;
-			
-			if (!write_count[3])
-	  			write_count <= write_count + 5'b1;
 				
 			if (avl_readdatavalid)
 			begin

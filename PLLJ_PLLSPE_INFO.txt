@@ -8,6 +8,11 @@ PLLJITTER	NA
 PLLSPEmax	NA
 PLLSPEmin	NA
 
+PLL_Name	fpga_lpddr2:fpga_lpddr2_inst|fpga_lpddr2_0002:fpga_lpddr2_inst|fpga_lpddr2_pll0:pll0|pll2_phy~PLL_OUTPUT_COUNTER
+PLLJITTER	NA
+PLLSPEmax	NA
+PLLSPEmin	NA
+
 PLL_Name	fpga_lpddr2:fpga_lpddr2_inst|fpga_lpddr2_0002:fpga_lpddr2_inst|fpga_lpddr2_pll0:pll0|pll3~PLL_OUTPUT_COUNTER
 PLLJITTER	NA
 PLLSPEmax	NA
@@ -34,7 +39,7 @@ PLLSPEmax	NA
 PLLSPEmin	NA
 
 PLL_Name	hdmi_tx_pll:pll|hdmi_tx_pll_0002:hdmi_tx_pll_inst|altera_pll:altera_pll_i|general[0].gpll~FRACTIONAL_PLL
-PLLJITTER	57
+PLLJITTER	56
 PLLSPEmax	50
 PLLSPEmin	-50
 

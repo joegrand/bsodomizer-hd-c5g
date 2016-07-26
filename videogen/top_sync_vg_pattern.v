@@ -42,16 +42,18 @@ parameter PATTERN_RAMP_STEP = 20'h0222;
 wire reset; 
 assign reset = !resetb; 
     
-   wire [11:0] x_out; 
-   wire [12:0] y_out; 
-   wire [7:0] r_out; 
-   wire [7:0] g_out; 
-   wire [7:0] b_out; 
+wire [11:0] x_out; 
+wire [12:0] y_out; 
+wire [7:0] r_out; 
+wire [7:0] g_out; 
+wire [7:0] b_out; 
+
+reg pclk;
     
    /* ********************* */ 
    sync_vg #(.X_BITS(12), .Y_BITS(12)) sync_vg   
    ( 
-     .clk(clk_in), 
+     .clk(pclk), 
      .reset(reset),  
      .interlaced(INTERLACED), 
      .clk_out(), // inverted output clock - unconnected 
@@ -87,7 +89,7 @@ assign reset = !resetb;
 	  .FRACTIONAL_BITS(12)) // Number of fractional bits for ramp pattern 
 	pattern_vg ( 
 	  .reset(reset), 
-	  .clk_in(clk_in), 
+	  .clk_in(avl_clk), 
 	  .x(x_out), 
 	  .y(y_out[11:0]), 
 	  .vn_in(vs), 
@@ -104,7 +106,7 @@ assign reset = !resetb;
 	  .b_out(b_out), 
 	  .total_active_pix(H_TOTAL  - (H_FP + H_BP + H_SYNC)), // (1920) // h_total - (h_fp+h_bp+h_sync) 
 	  .total_active_lines(INTERLACED ? (V_TOTAL_0 - (V_FP_0 + V_BP_0 + V_SYNC_0)) + (V_TOTAL_1 - (V_FP_1 + V_BP_1 + 
-	V_SYNC_1)) : (V_TOTAL_0 -  (V_FP_0 + V_BP_0 + V_SYNC_0))),         // originally: 13'd480 
+	V_SYNC_1)) : (V_TOTAL_0 -  (V_FP_0 + V_BP_0 + V_SYNC_0))),  // originally: 13'd480 
 	  .pattern(PATTERN_TYPE),   
 	  .ramp_step(PATTERN_RAMP_STEP),
 	  .dip_sw(dip_sw),
@@ -118,16 +120,37 @@ assign reset = !resetb;
 	  .avl_burstbegin(avl_burstbegin)
 	  ); 
      
-   assign adv7513_clk = ~clk_in; 
-    
-   always @(posedge clk_in) 
+	  
+	// clock divider to create PCLK (148.5MHz) from 2xPCLK (needed for LPDDR2/pattern_vg.v)
+	always@(posedge avl_clk or posedge reset)
+	begin
+		if(reset) 
+			pclk <= 1'b0; 
+		else 
+			pclk <= ~pclk;
+	end
+	    
+   //assign adv7513_clk = ~clk_in; 
+   assign adv7513_clk = ~pclk;
+	
+   //always @(posedge clk_in) 
+	always @(posedge pclk or posedge reset)
    begin 
-     adv7513_d[23:16] <= r_out; 
-     adv7513_d[15:8] <= g_out; 
-     adv7513_d[7:0]  <= b_out; 
-     adv7513_hs <= hs_out; 
-     adv7513_vs <= vs_out; 
-     adv7513_de <= de_out; 
+	  if(reset)
+	  begin
+		adv7513_d <= 24'h0; 
+		adv7513_hs <= 8'h00; 
+		adv7513_vs <= 8'h00; 
+		adv7513_de <= 8'h00; 
+	  end
+	  else begin
+		adv7513_d[23:16] <= r_out; 
+		adv7513_d[15:8] <= g_out; 
+		adv7513_d[7:0]  <= b_out; 
+		adv7513_hs <= hs; 
+		adv7513_vs <= vs; 
+		adv7513_de <= de; 
+	  end
    end 
 
    endmodule

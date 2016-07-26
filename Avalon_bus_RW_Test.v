@@ -52,7 +52,7 @@ reg  [4:0]   write_count;
 //=======================================================
 assign avl_burstbegin = avl_write;
 		
-always@(posedge iCLK)
+always@(posedge iCLK or negedge iRST_n)
 begin
 	if (!iRST_n)
 	begin 
@@ -60,7 +60,7 @@ begin
 		trigger <= 1'b0;
 		c_state <= 4'b0;
 		avl_write <= 1'b0;
-		write_count <= 5'b0;
+		//write_count <= 5'b0;
 	end
 	else
 	begin
@@ -74,20 +74,20 @@ begin
 	  			c_state <= 1;
 	  	end
 	  	1 : begin //write
-			/*if (avl_address < ('d1920 * 'd1080) / 2)  // sdc set multi-cycle 3
+			if (avl_address < ('d1920 * 'd1080) / 2)  // sdc set multi-cycle 3
 				avl_writedata <= 32'h0055AA55;
 			else
-				avl_writedata <= 32'h00BB6666;*/
+				avl_writedata <= 32'h00BB6666;
 				
-			avl_writedata <= (avl_address | 32'b0);
-			if (write_count[3])
-	  		begin
-	  			write_count <= 5'b0;
+			//avl_writedata <= avl_address;
+			//if (write_count[3])
+	  		//begin
+	  		//	write_count <= 5'b0;
 			   avl_write <= 1'b1;
 				c_state <= 2;
-			end
-			else
-			  	write_count <= write_count + 1'b1;
+			//end
+			//else
+			//  	write_count <= write_count + 1'b1;
 	  	end
 	  	2 : begin //finish write one data
 	  		if (avl_waitrequest_n)
