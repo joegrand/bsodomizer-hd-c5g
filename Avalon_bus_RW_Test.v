@@ -60,6 +60,7 @@ begin
 		trigger <= 1'b0;
 		c_state <= 4'b0;
 		avl_write <= 1'b0;
+		avl_address <= 27'b0;
 		//write_count <= 5'b0;
 	end
 	else
@@ -78,8 +79,23 @@ begin
 				avl_writedata <= 32'h0055AA55;
 			else
 				avl_writedata <= 32'h00BB6666;
+			
+		   /*if (avl_address[0] == 0 && avl_address[1] == 0)
+				avl_writedata <= 32'h00FFFFFF;
+			else if (avl_address[0] == 1 && avl_address[1] == 0)
+				avl_writedata <= 32'h00FF0000;
+			else if (avl_address[0] == 0 && avl_address[1] == 1)
+				avl_writedata <= 32'h0000FF00;
+         else
+				avl_writedata <= 32'h000000FF;*/
+		
+		   /*if (avl_address[0] == 1'b0)
+				avl_writedata <= 32'h00FF0000;
+			else
+				avl_writedata <= 32'h000FFFFF;*/
 				
-			//avl_writedata <= avl_address;
+			//avl_writedata <= avl_address;			
+			
 			//if (write_count[3])
 	  		//begin
 	  		//	write_count <= 5'b0;

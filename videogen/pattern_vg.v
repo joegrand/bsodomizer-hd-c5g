@@ -23,7 +23,7 @@ module pattern_vg
 	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
 	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
-	output wire  [26:0]  avl_address,       	//       .address
+	output reg  [26:0]  avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
 	output reg          avl_read,          	//       .read
@@ -53,7 +53,6 @@ reg next_pattern;
 
 // Pattern generator
 reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp values 
-reg [7:0] ramp_counter; // 8-bit counter
 
 // Internal RAM
 /*reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
@@ -61,9 +60,8 @@ reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
 reg intram_wren;*/
 
 // LPDDR2
-reg [31:0]   avl_q; 		// data read from memory
+//reg [31:0]   avl_q; 		// data read from memory
 //reg  [4:0]   write_count;
-reg  [26:0]  avl_address_old;
 
 
 //=======================================================
@@ -79,8 +77,7 @@ wire [31:0] prng_data; 	// PRNG output
 //=======================================================
 
 assign avl_burstbegin = avl_read;
-
-assign avl_address = x + (y * 'd1080); // Address needs to be synchronized to the current pixel location
+//assign avl_address = x + (y * 'd1920); // Address needs to be synchronized to the current pixel location
 
 
 //=======================================================
@@ -122,8 +119,7 @@ ca_prng prng (
  * sensitivity list ensures peripherals receive an async reset.
  */
 always @ (posedge avl_clk or posedge reset) begin 
-  if (reset) 
-  begin
+  if (reset) begin
     /* There should always be a reset state defined for each signal that is
      * modified in the unreset state of the sequential logic block
      */
@@ -138,11 +134,8 @@ always @ (posedge avl_clk or posedge reset) begin
     next_pattern <= 1'b0;
     read_state <= 1'b0;
     avl_read <= 1'b0;
-    //avl_address <= 27'h0;
-	 avl_address_old <= 27'h0;
-  end 
-  else 
-  begin
+    avl_address <= 27'h0;
+  end else begin
     //vn_out <= vn_in; 
     //hn_out <= hn_in; 
     //den_out <= dn_in;
@@ -154,14 +147,16 @@ always @ (posedge avl_clk or posedge reset) begin
       b_out <= 8'b0; 
     end
     3'b001 : begin	// border (thin white line around edge of frame)
-		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
-			r_out <= 8'hFF; 
-			g_out <= 8'hFF; 
-			b_out <= 8'hFF; 
-		end else begin
-			r_out <= 8'b0; 
-			g_out <= 8'b0; 
-			b_out <= 8'b0;
+		if (dn_in) begin
+			if ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1)) begin 
+				r_out <= 8'hFF; 
+				g_out <= 8'hFF; 
+				b_out <= 8'hFF; 
+			end else begin
+				r_out <= 8'b0; 
+				g_out <= 8'b0; 
+				b_out <= 8'b0;
+			end
 		end 
     end
     3'b010 : begin	// moire vertical (alternate black and white pixels every other x)
@@ -187,15 +182,17 @@ always @ (posedge avl_clk or posedge reset) begin
       end 	 
     end
     3'b100 : begin	// ramp (vertical greyscale shading, black to white)
-		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		if ((x == total_active_pix - 1) && (dn_in))
-		  ramp_values <= 0; 
-		else if ((x == 0) && (dn_in)) 
-		  ramp_values <= ramp_step; 
-		else if (dn_in) 
-		  ramp_values <= ramp_values + ramp_step;
+	   if (dn_in) begin
+			r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+			g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+			b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+			if ((x == total_active_pix - 1) && (dn_in))
+			  ramp_values <= 0; 
+			else if ((x == 0) && (dn_in)) 
+			  ramp_values <= ramp_step; 
+			else if (dn_in) 
+			  ramp_values <= ramp_values + ramp_step;
+		end
     end
     3'b101 : begin	// PRNG (static)
 		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
@@ -277,52 +274,45 @@ always @ (posedge avl_clk or posedge reset) begin
        * depending on the glitches seen previously, the aforementioned could be
        * part of the problem.
        */
-		 case (read_state)
-		 0 : begin
-		   if (local_init_done)
-			begin
-				avl_read <= 1'b1; // assert read request
-				if (avl_waitrequest_n)  // if read is done, go to the next state
-					read_state <= 1'b1;		 
+		 if (dn_in) begin
+			 case (read_state)
+			 0 : begin
+				if (local_init_done)
+				begin
+					avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
+					avl_read <= 1'b1; // assert read request
+					if (avl_waitrequest_n)  // if read is done, go to the next state
+						read_state <= 1'b1;		 
+				end
+			 end
+			 1 : begin
+				if(avl_readdatavalid) begin // latch read data
+				  r_out <= avl_readdata[23:16];
+				  g_out <= avl_readdata[15:8];
+				  b_out <= avl_readdata[7:0];
+							 
+				  avl_read <= 1'b0;
+				  read_state <= 1'b0;
+				end
+			 end
+			 endcase
+		 end
+		 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
+			if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
+			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
+			  g_out <= 8'hC0; 
+			  b_out <= 8'hC0; 
+			end else begin
+			  //r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
+			  //g_out <= 8'h0; 
+			  //b_out <= 8'h80;
+			  r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
+			  g_out <= 8'h71; 
+			  b_out <= 8'hab;
 			end
-		 end
-		 1 : begin
-         if(avl_readdatavalid) // latch read data
-		   begin
-			//if (dn_in) begin
-			if (avl_address_old != avl_address) begin
-           r_out <= avl_readdata[23:16];
-           g_out <= avl_readdata[15:8];
-           b_out <= avl_readdata[7:0];
-           avl_address_old <= avl_address;
-						 
-	 		  avl_read <= 1'b0;
-			  read_state <= 1'b0;
-		   end
-         /*end else begin 
-				r_out <= 8'b0; 
-				g_out <= 8'b0; 
-				b_out <= 8'b0;
-		   end*/
-         end
-		 end
-		 endcase
-    end
-    /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
-      if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
-        r_out <= 8'hC0; 	// silver/white (BSOD, text)
-        g_out <= 8'hC0; 
-        b_out <= 8'hC0; 
-      end else begin
-        //r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
-        //g_out <= 8'h0; 
-        //b_out <= 8'h80;
-        r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
-        g_out <= 8'h71; 
-        b_out <= 8'hab;
-      end
-    end*/
-    endcase
+		 end*/
+	 end	 
+	 endcase
   end
 end 
   
@@ -393,6 +383,5 @@ begin
 	  end
 	end
 end*/
-
 
 endmodule

@@ -56,8 +56,7 @@ reg pclk;
      .clk(pclk), 
      .reset(reset),  
      .interlaced(INTERLACED), 
-     .clk_out(), // inverted output clock - unconnected 
-    
+     .clk_out(), 
      .v_total_0(V_TOTAL_0), 
      .v_fp_0(V_FP_0), 
      .v_bp_0(V_BP_0), 
@@ -146,11 +145,11 @@ reg pclk;
 	  else begin
 		adv7513_d[23:16] <= r_out; 
 		adv7513_d[15:8] <= g_out; 
-		adv7513_d[7:0]  <= b_out; 
+		adv7513_d[7:0] <= b_out; 
 		adv7513_hs <= hs; 
 		adv7513_vs <= vs; 
 		adv7513_de <= de; 
 	  end
    end 
-
-   endmodule
+	
+endmodule
