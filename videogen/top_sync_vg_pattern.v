@@ -106,7 +106,7 @@ reg pclk;
 	  .total_active_pix(H_TOTAL  - (H_FP + H_BP + H_SYNC)), // (1920) // h_total - (h_fp+h_bp+h_sync) 
 	  .total_active_lines(INTERLACED ? (V_TOTAL_0 - (V_FP_0 + V_BP_0 + V_SYNC_0)) + (V_TOTAL_1 - (V_FP_1 + V_BP_1 + 
 	V_SYNC_1)) : (V_TOTAL_0 -  (V_FP_0 + V_BP_0 + V_SYNC_0))),  // originally: 13'd480 
-	  .pattern(PATTERN_TYPE),   
+	  //.pattern(PATTERN_TYPE),   
 	  .ramp_step(PATTERN_RAMP_STEP),
 	  .dip_sw(dip_sw),
 	  .avl_clk(avl_clk),								// LPDDR2 (read only)

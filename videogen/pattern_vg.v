@@ -16,7 +16,7 @@ module pattern_vg
    output reg [B-1:0] r_out, g_out, b_out, 
    input wire [X_BITS-1:0] total_active_pix, 
    input wire [Y_BITS-1:0] total_active_lines, 
-   input wire [7:0] pattern, 
+   //input wire [7:0] pattern, 
    input wire [B+FRACTIONAL_BITS-1:0] ramp_step,
 	input wire [2:0] dip_sw,
 	
@@ -77,7 +77,6 @@ wire [31:0] prng_data; 	// PRNG output
 //=======================================================
 
 assign avl_burstbegin = avl_read;
-//assign avl_address = x + (y * 'd1920); // Address needs to be synchronized to the current pixel location
 
 
 //=======================================================
@@ -142,22 +141,22 @@ always @ (posedge avl_clk or posedge reset) begin
     
     case (dip_sw)
     3'b000 : begin	// no pattern (black screen)
-      r_out <= 8'b0; 
-      g_out <= 8'b0; 
-      b_out <= 8'b0; 
+	   if (dn_in) begin
+			r_out <= 8'h00; 
+			g_out <= 8'h00; 
+			b_out <= 8'h00; 
+		end
     end
     3'b001 : begin	// border (thin white line around edge of frame)
-		if (dn_in) begin
-			if ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1)) begin 
-				r_out <= 8'hFF; 
-				g_out <= 8'hFF; 
-				b_out <= 8'hFF; 
-			end else begin
-				r_out <= 8'b0; 
-				g_out <= 8'b0; 
-				b_out <= 8'b0;
-			end
-		end 
+		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
+			r_out <= 8'hFF; 
+			g_out <= 8'hFF; 
+			b_out <= 8'hFF; 
+		end else begin
+			r_out <= 8'h00; 
+			g_out <= 8'h00; 
+			b_out <= 8'h00;
+		end
     end
     3'b010 : begin	// moire vertical (alternate black and white pixels every other x)
       if ((dn_in) && x[0] == 1'b1) begin 
@@ -165,9 +164,9 @@ always @ (posedge avl_clk or posedge reset) begin
         g_out <= 8'hFF; 
         b_out <= 8'hFF; 
       end else begin
-        r_out <= 8'b0; 
-        g_out <= 8'b0; 
-        b_out <= 8'b0; 
+        r_out <= 8'h00; 
+        g_out <= 8'h00; 
+        b_out <= 8'h00; 
      end	 
     end
     3'b011 : begin	// moire horizontal (alternate black and white pixels every other y)
@@ -176,35 +175,34 @@ always @ (posedge avl_clk or posedge reset) begin
         g_out <= 8'hFF; 
         b_out <= 8'hFF; 
       end else begin 
-        r_out <= 8'b0; 
-        g_out <= 8'b0; 
-        b_out <= 8'b0; 
+        r_out <= 8'h00; 
+        g_out <= 8'h00; 
+        b_out <= 8'h00; 
       end 	 
     end
     3'b100 : begin	// ramp (vertical greyscale shading, black to white)
-	   if (dn_in) begin
-			r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-			g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-			b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-			if ((x == total_active_pix - 1) && (dn_in))
-			  ramp_values <= 0; 
-			else if ((x == 0) && (dn_in)) 
-			  ramp_values <= ramp_step; 
-			else if (dn_in) 
-			  ramp_values <= ramp_values + ramp_step;
-		end
+		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+
+		if ((x == total_active_pix - 1) && (dn_in))
+		  ramp_values <= 0; 
+		else if ((x == 0) && (dn_in)) 
+		  ramp_values <= ramp_step; 
+		else if (dn_in) 
+		  ramp_values <= ramp_values + ramp_step;
     end
     3'b101 : begin	// PRNG (static)
-		if (prng_data == 'h0)   // on first run, we need to load the initialization pattern
+		if (prng_data == 8'h00)   // on first run, we need to load the initialization pattern
 		  load_init_pattern <= 1'b1;
 		else begin
 		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
 		  next_pattern      <= 1'b1;
 		end
 		if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
-		  r_out <= 8'h0; // black
-		  g_out <= 8'h0; 
-		  b_out <= 8'h0;  
+		  r_out <= 8'h00; // black
+		  g_out <= 8'h00; 
+		  b_out <= 8'h00;  
 		end else begin
 		  r_out <= 8'hFF; // white
 		  g_out <= 8'hFF; 
@@ -259,9 +257,9 @@ always @ (posedge avl_clk or posedge reset) begin
 			  b_out <= 8'h00; 
 			end
 		end else begin 
-        r_out <= 8'b0; 
-        g_out <= 8'b0; 
-        b_out <= 8'b0;
+        r_out <= 8'h00; 
+        g_out <= 8'h00; 
+        b_out <= 8'h00;
 		end
 	 end
     3'b111 : begin	// image (1920 x 1080, 8bpp)
@@ -274,29 +272,27 @@ always @ (posedge avl_clk or posedge reset) begin
        * depending on the glitches seen previously, the aforementioned could be
        * part of the problem.
        */
-		 if (dn_in) begin
-			 case (read_state)
-			 0 : begin
-				if (local_init_done)
-				begin
-					avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
-					avl_read <= 1'b1; // assert read request
-					if (avl_waitrequest_n)  // if read is done, go to the next state
-						read_state <= 1'b1;		 
-				end
-			 end
-			 1 : begin
-				if(avl_readdatavalid) begin // latch read data
-				  r_out <= avl_readdata[23:16];
-				  g_out <= avl_readdata[15:8];
-				  b_out <= avl_readdata[7:0];
-							 
-				  avl_read <= 1'b0;
-				  read_state <= 1'b0;
-				end
-			 end
-			 endcase
+		 case (read_state)
+		 0 : begin
+			if (local_init_done)
+			begin
+				avl_read <= 1'b1; // assert read request
+				if (avl_waitrequest_n)  // if read is done, go to the next state
+					read_state <= 1'b1;		 
+			end
 		 end
+		 1 : begin
+			if(avl_readdatavalid && dn_in) begin // latch read data
+			  r_out <= avl_readdata[23:16];
+			  g_out <= avl_readdata[15:8];
+			  b_out <= avl_readdata[7:0];
+							 
+			  avl_read <= 1'b0;
+			  avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
+			  read_state <= 1'b0;
+			end
+		 end
+		 endcase
 		 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
 			if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
 			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
