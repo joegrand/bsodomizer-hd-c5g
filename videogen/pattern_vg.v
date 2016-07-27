@@ -59,7 +59,7 @@ reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
 reg intram_wren;*/
 
 // LPDDR2
-//reg [31:0]   avl_q; 		// data read from memory
+reg [31:0]   avl_q; 		// data read from memory
 //reg  [4:0]   write_count;
 
 
@@ -116,7 +116,7 @@ ca_prng prng (
  * is asynchronous reset, synchronous un-reset.  Adding reset to the
  * sensitivity list ensures peripherals receive an async reset.
  */
-always @ (posedge avl_clk or posedge reset) begin 
+always @ (posedge clk_in or posedge reset) begin 
   if (reset) begin
     /* There should always be a reset state defined for each signal that is
      * modified in the unreset state of the sequential logic block
@@ -131,9 +131,6 @@ always @ (posedge avl_clk or posedge reset) begin
 	 ramp_values <= 0;
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
-    read_state <= 1'b0;
-    avl_read <= 1'b0;
-    avl_address <= 27'h0;
   end else begin
     vn_out <= vn_in; 
     hn_out <= hn_in; 
@@ -272,27 +269,12 @@ always @ (posedge avl_clk or posedge reset) begin
        * depending on the glitches seen previously, the aforementioned could be
        * part of the problem.
        */
-		 case (read_state)
-		 0 : begin
-			if (local_init_done)
-			begin
-				avl_read <= 1'b1; // assert read request
-				if (avl_waitrequest_n)  // if read is done, go to the next state
-					read_state <= 1'b1;		 
-			end
+		 if (dn_in) begin
+			r_out <= avl_q[23:16];
+			g_out <= avl_q[15:8];
+			b_out <= avl_q[7:0];
 		 end
-		 1 : begin
-			if(avl_readdatavalid && dn_in) begin // latch read data
-			  r_out <= avl_readdata[23:16];
-			  g_out <= avl_readdata[15:8];
-			  b_out <= avl_readdata[7:0];
-							 
-			  avl_read <= 1'b0;
-			  avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
-			  read_state <= 1'b0;
-			end
-		 end
-		 endcase
+		 				
 		 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
 			if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
 			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
@@ -313,50 +295,36 @@ always @ (posedge avl_clk or posedge reset) begin
 end 
   
  
-////////////	LPDDR2 ADDR Generator	////////////
+////////////	LPDDR2 	////////////
 
-/*always @ (posedge avl_clk)
+always @ (posedge avl_clk or posedge reset)
 begin	 
-   if(reset)
-   begin
+   if(reset) begin
+	   read_state <= 1'b0;
 		avl_read <= 1'b0;
-		avl_address <= 0;
-		c_state <= 4'b0;
-		write_count <= 5'b0;
-   end
-	else
-	begin
-		case (c_state)
-		0 : begin // set memory address
-			if (local_init_done)
-			begin
-				if (avl_address == ('d1920 * 'd1080))
-					avl_address <= 0;
-			
-				c_state <= 1;
+		avl_address <= 27'h0;
+   end else begin
+		case (read_state)
+		0 : begin
+			if (local_init_done) begin
+				avl_read <= 1'b1; // assert read request
+				if (avl_waitrequest_n)  // if read is done, go to the next state
+				read_state <= 1'b1;		 
 			end
 		end
-		1 : begin // assert read
-			avl_read <= 1;
-				
-			// if read is done, go to the next state
-			if (avl_waitrequest_n)
-				c_state <= 2;
-		end
-		2 : begin // latch read data
-	  		avl_read <= 0;
-				
-			if (avl_readdatavalid)
-			begin
-	  			avl_q <= avl_readdata;
-				avl_address <= avl_address+1;
-				c_state <= 0;
+		1 : begin
+			if(avl_readdatavalid) begin // latch read data
+				avl_q <= avl_readdata;							
+				avl_read <= 1'b0;
+				avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
+				read_state <= 1'b0;
 			end
-	   end
-		default : c_state <= 0;
+		end
+		default : read_state <= 1'b0;
 	   endcase
 	end
-end */	  
+end
+
 		
 ////////////	SRAM ADDR Generator	  ////////////
 /*always @ (negedge clk_in)

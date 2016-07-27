@@ -37,7 +37,7 @@ parameter H_BP        = 12'd148;
 parameter H_SYNC      = 12'd44; 
 parameter HV_OFFSET_0 = 12'd0; 
 parameter HV_OFFSET_1 = 12'd0; 
-parameter PATTERN_RAMP_STEP = 20'h0444; //20'h0222; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222
+parameter PATTERN_RAMP_STEP = 20'h0222; //20'h0444; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222
  
 wire reset; 
 assign reset = !resetb; 
@@ -88,7 +88,7 @@ reg pclk;
 	  .FRACTIONAL_BITS(12)) // Number of fractional bits for ramp pattern 
 	pattern_vg ( 
 	  .reset(reset), 
-	  .clk_in(avl_clk), 
+	  .clk_in(pclk), 
 	  .x(x_out), 
 	  .y(y_out[11:0]), 
 	  .vn_in(vs), 
