@@ -46,7 +46,7 @@ reg [X_BITS-1:0] hv_offset;
 assign clk_out = !clk; 
  
 /* horizontal counter */ 
-always @(posedge clk) 
+always @(posedge clk or posedge reset) 
   if (reset)  
     h_count <= 0; 
   else 
@@ -56,7 +56,7 @@ always @(posedge clk)
       h_count <= 0; 
  
 /* vertical counter */ 
-always @(posedge clk) 
+always @(posedge clk or posedge reset) 
   if (reset)  
     v_count <= 0; 
   else 
@@ -69,7 +69,7 @@ always @(posedge clk)
     end 
  
 /* field */ 
-always @(posedge clk) 
+always @(posedge clk or posedge reset) 
   if (reset) 
   begin 
     field <= 0; 
@@ -91,7 +91,7 @@ always @(posedge clk)
         hv_offset <= field ? hv_offset_0 : hv_offset_1; 
       end 
    
-  always @(posedge clk) 
+  always @(posedge clk or posedge reset) 
   if (reset) 
     { vs_out, hs_out, de_out, field_out } <= 4'b0; 
   else begin 

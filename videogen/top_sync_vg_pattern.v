@@ -37,7 +37,7 @@ parameter H_BP        = 12'd148;
 parameter H_SYNC      = 12'd44; 
 parameter HV_OFFSET_0 = 12'd0; 
 parameter HV_OFFSET_1 = 12'd0; 
-parameter PATTERN_RAMP_STEP = 20'h0222;
+parameter PATTERN_RAMP_STEP = 20'h0444; //20'h0222; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222
  
 wire reset; 
 assign reset = !resetb; 
@@ -94,9 +94,9 @@ reg pclk;
 	  .vn_in(vs), 
 	  .hn_in(hs), 
 	  .dn_in(de), 
-	  .r_in(8'h0), // default red channel value 
-	  .g_in(8'h0), // default green channel value 
-	  .b_in(8'h0), // default blue channel value 
+	  .r_in(8'h00), // default red channel value 
+	  .g_in(8'h00), // default green channel value 
+	  .b_in(8'h00), // default blue channel value 
 	  .vn_out(vs_out),   
 	  .hn_out(hs_out), 
 	  .den_out(de_out), 
@@ -106,9 +106,9 @@ reg pclk;
 	  .total_active_pix(H_TOTAL  - (H_FP + H_BP + H_SYNC)), // (1920) // h_total - (h_fp+h_bp+h_sync) 
 	  .total_active_lines(INTERLACED ? (V_TOTAL_0 - (V_FP_0 + V_BP_0 + V_SYNC_0)) + (V_TOTAL_1 - (V_FP_1 + V_BP_1 + 
 	V_SYNC_1)) : (V_TOTAL_0 -  (V_FP_0 + V_BP_0 + V_SYNC_0))),  // originally: 13'd480 
-	  //.pattern(PATTERN_TYPE),   
 	  .ramp_step(PATTERN_RAMP_STEP),
 	  .dip_sw(dip_sw),
+	  
 	  .avl_clk(avl_clk),								// LPDDR2 (read only)
 	  .local_init_done(local_init_done),
 	  .avl_waitrequest_n(avl_waitrequest_n),                
@@ -121,20 +121,18 @@ reg pclk;
      
 	  
 	// clock divider to create PCLK (148.5MHz) from 2xPCLK (needed for LPDDR2/pattern_vg.v)
-	always@(posedge avl_clk or posedge reset)
-	begin
+	always@(posedge avl_clk or posedge reset) begin
 		if(reset) 
 			pclk <= 1'b0; 
 		else 
-			pclk <= ~pclk;
+			pclk <= !pclk;
 	end
 	    
    //assign adv7513_clk = ~clk_in; 
-   assign adv7513_clk = ~pclk;
+   assign adv7513_clk = !pclk;
 	
    //always @(posedge clk_in) 
-	always @(posedge pclk or posedge reset)
-   begin 
+	always @(posedge pclk or posedge reset) begin 
 	  if(reset)
 	  begin
 		adv7513_d <= 24'h0; 
@@ -146,9 +144,9 @@ reg pclk;
 		adv7513_d[23:16] <= r_out; 
 		adv7513_d[15:8] <= g_out; 
 		adv7513_d[7:0] <= b_out; 
-		adv7513_hs <= hs; 
-		adv7513_vs <= vs; 
-		adv7513_de <= de; 
+		adv7513_hs <= hs_out; 
+		adv7513_vs <= vs_out; 
+		adv7513_de <= de_out; 
 	  end
    end 
 	

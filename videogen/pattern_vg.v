@@ -16,7 +16,6 @@ module pattern_vg
    output reg [B-1:0] r_out, g_out, b_out, 
    input wire [X_BITS-1:0] total_active_pix, 
    input wire [Y_BITS-1:0] total_active_lines, 
-   //input wire [7:0] pattern, 
    input wire [B+FRACTIONAL_BITS-1:0] ramp_step,
 	input wire [2:0] dip_sw,
 	
@@ -123,21 +122,22 @@ always @ (posedge avl_clk or posedge reset) begin
      * modified in the unreset state of the sequential logic block
      */
     ramp_values <= 0; 
-    //vn_out <= 1'b0;
-    //hn_out <= 1'b0;
-    //den_out <= 1'b0;
+    vn_out <= vn_in;
+    hn_out <= hn_in;
+    den_out <= dn_in;
     r_out <= 8'h00;
     g_out <= 8'h00;
     b_out <= 8'h00;
+	 ramp_values <= 0;
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
     read_state <= 1'b0;
     avl_read <= 1'b0;
     avl_address <= 27'h0;
   end else begin
-    //vn_out <= vn_in; 
-    //hn_out <= hn_in; 
-    //den_out <= dn_in;
+    vn_out <= vn_in; 
+    hn_out <= hn_in; 
+    den_out <= dn_in;
     
     case (dip_sw)
     3'b000 : begin	// no pattern (black screen)
@@ -199,11 +199,11 @@ always @ (posedge avl_clk or posedge reset) begin
 		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
 		  next_pattern      <= 1'b1;
 		end
-		if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
+		if ((prng_data > 'h23456789) && (dn_in)) begin  // set threshold for selecting black or white pixels
 		  r_out <= 8'h00; // black
 		  g_out <= 8'h00; 
 		  b_out <= 8'h00;  
-		end else begin
+		end else if (dn_in) begin
 		  r_out <= 8'hFF; // white
 		  g_out <= 8'hFF; 
 		  b_out <= 8'hFF; 

@@ -80,6 +80,16 @@ begin
 			else
 				avl_writedata <= 32'h00BB6666;
 			
+			if (avl_address <= 27'h7E900)  // sdc set multi-cycle 3
+				avl_writedata <= 32'h00FF0000;
+			else if (avl_address >= 27'h7E901 && avl_address <= 27'hFD200)
+				avl_writedata <= 32'h0000FF00;
+			else if (avl_address >= 27'hDF201 && avl_address <= 27'h17BB00)
+				avl_writedata <= 32'h000000FF;
+			else
+				avl_writedata <= 32'h00FFFFFF;	
+			
+			
 		   /*if (avl_address[0] == 0 && avl_address[1] == 0)
 				avl_writedata <= 32'h00FFFFFF;
 			else if (avl_address[0] == 1 && avl_address[1] == 0)
