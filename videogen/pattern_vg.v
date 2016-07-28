@@ -59,8 +59,13 @@ reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
 reg intram_wren;*/
 
 // LPDDR2
-reg [31:0]   avl_q; 		// data read from memory
 //reg  [4:0]   write_count;
+
+// FIFO
+reg [31:0] fifo_data; 	// data written into fifo
+wire [31:0] fifo_q; 		// data read from fifo
+reg fifo_rdreq;
+reg fifo_wrreq;
 
 
 //=======================================================
@@ -82,6 +87,18 @@ assign avl_burstbegin = avl_read;
 //  Core instantiations
 //=======================================================
 
+fifo fifo_inst (
+	.data (fifo_data),
+	.rdclk (clk_in), // 148.5MHz
+	.rdreq (fifo_rdreq),
+	.wrclk (avl_clk), // 297MHz (2xPCLK)
+	.wrreq (fifo_wrreq),
+	.q (avl_q),
+	.rdempty (),
+	.wrfull ()
+	);
+	
+	
 // Cellular automata PRNG
 ca_prng prng (
    .clk(clk_in),
@@ -131,6 +148,7 @@ always @ (posedge clk_in or posedge reset) begin
 	 ramp_values <= 0;
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
+	 fifo_rdreq <= 1'b1;
   end else begin
     vn_out <= vn_in; 
     hn_out <= hn_in; 
@@ -270,9 +288,10 @@ always @ (posedge clk_in or posedge reset) begin
        * part of the problem.
        */
 		 if (dn_in) begin
-			r_out <= avl_q[23:16];
-			g_out <= avl_q[15:8];
-			b_out <= avl_q[7:0];
+			//fifo_rdreq <= 1'b1;
+			r_out <= fifo_q[23:16]; // get data from fifo and push to HDMI
+			g_out <= fifo_q[15:8];
+			b_out <= fifo_q[7:0];
 		 end
 		 				
 		 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
@@ -303,18 +322,21 @@ begin
 	   read_state <= 1'b0;
 		avl_read <= 1'b0;
 		avl_address <= 27'h0;
+		fifo_wrreq <= 1'b0;
    end else begin
 		case (read_state)
 		0 : begin
 			if (local_init_done) begin
 				avl_read <= 1'b1; // assert read request
+				fifo_wrreq <= 1'b1; // assert fifo write request
+				
 				if (avl_waitrequest_n)  // if read is done, go to the next state
 				read_state <= 1'b1;		 
 			end
 		end
 		1 : begin
 			if(avl_readdatavalid) begin // latch read data
-				avl_q <= avl_readdata;							
+				fifo_data <= avl_readdata;	// push received data from LPDDR2 into fifo						
 				avl_read <= 1'b0;
 				avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
 				read_state <= 1'b0;

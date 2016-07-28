@@ -90,7 +90,7 @@ reg state;
 //=======================================================
 
 wire altclk_out;
-//wire hdmi_tx_clk_148_5;
+wire hdmi_tx_clk_148_5;
 wire hdmi_tx_clk_297; // 2x PCLK for use w/ LPDDR2 port 1 clock (each data read requires 2 clock cycles, so this keeps us in sync with HDMI TX)
 wire hdmi_tx_pll_locked;
 
@@ -159,8 +159,8 @@ ALTCLKCTRL clk (
 hdmi_tx_pll pll (
 	.refclk(altclk_out),
 	.rst(!CPU_RESET_n),
-	.outclk_0(hdmi_tx_clk_297),
-	//.outclk_1(hdmi_tx_clk_297),
+	.outclk_0(hdmi_tx_clk_148_5),
+	.outclk_1(hdmi_tx_clk_297),
 	.locked(hdmi_tx_pll_locked)
 );
 
@@ -175,7 +175,7 @@ hdmi_tx_ctrl hdmi (
 
 // Video Generator
 top_sync_vg_pattern vg (
-	.clk_in(hdmi_tx_clk_297), 		// PCLK (148.5MHz) sent into video generator
+	.clk_in(hdmi_tx_clk_148_5), 		// PCLK (148.5MHz) sent into video generator
 	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_complete),	// Start if TX mode selected and PLL is locked 
 	.adv7513_hs(HDMI_TX_HS),     		// HS (HSync) 
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)

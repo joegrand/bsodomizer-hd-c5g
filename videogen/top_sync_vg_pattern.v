@@ -53,7 +53,7 @@ reg pclk;
    /* ********************* */ 
    sync_vg #(.X_BITS(12), .Y_BITS(12)) sync_vg   
    ( 
-     .clk(pclk), 
+     .clk(clk_in), 
      .reset(reset),  
      .interlaced(INTERLACED), 
      .clk_out(), 
@@ -88,7 +88,7 @@ reg pclk;
 	  .FRACTIONAL_BITS(12)) // Number of fractional bits for ramp pattern 
 	pattern_vg ( 
 	  .reset(reset), 
-	  .clk_in(pclk), 
+	  .clk_in(clk_in), 
 	  .x(x_out), 
 	  .y(y_out[11:0]), 
 	  .vn_in(vs), 
@@ -121,18 +121,18 @@ reg pclk;
      
 	  
 	// clock divider to create PCLK (148.5MHz) from 2xPCLK (needed for LPDDR2/pattern_vg.v)
-	always@(posedge avl_clk or posedge reset) begin
+	/*always@(posedge avl_clk or posedge reset) begin
 		if(reset) 
 			pclk <= 1'b0; 
 		else 
 			pclk <= !pclk;
-	end
+	end*/
 	    
-   //assign adv7513_clk = ~clk_in; 
-   assign adv7513_clk = !pclk;
+   assign adv7513_clk = ~clk_in; 
+   //assign adv7513_clk = !pclk;
 	
-   //always @(posedge clk_in) 
-	always @(posedge pclk or posedge reset) begin 
+   always @(posedge clk_in or posedge reset) begin 
+	//always @(posedge pclk or posedge reset) begin 
 	  if(reset)
 	  begin
 		adv7513_d <= 24'h0; 
