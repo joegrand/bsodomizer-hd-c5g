@@ -198,9 +198,9 @@ always @(posedge clk) begin
 							startupstep <= #1 startupstep + 1;
 						end
 						1: begin
-							//if (!intrx) begin
+							if (!intrx) begin
 								ctrlstate <= #1 RXINT;
-							//end
+							end
 						end
 					endcase
 				end

@@ -299,24 +299,23 @@ begin
 		state <= counter[26];
 end
 
-
 // LPDDR2 RW test code
-reg [31:0]  cont;
-always@(posedge CLOCK_50_B6A)
-cont<=(cont==32'd4_000_001)?32'd0:cont+1'b1;
+reg [31:0] cont;
+always @ (posedge CLOCK_50_B6A)
+cont <= (cont == 32'd4_000_001) ? 32'd0 : cont + 1'b1;
 
 reg[4:0] sample;
-always@(posedge CLOCK_50_B6A)
+always @ (posedge CLOCK_50_B6A)
 begin
-	if(cont==32'd4_000_000)
-		sample[4:0]={sample[3:0],KEY[0]};
+	if(cont == 32'd4_000_000)
+		sample[4:0] = {sample[3:0], KEY[0]};
 	else 
-		sample[4:0]=sample[4:0];
+		sample[4:0] = sample[4:0];
 end
 
 // start-up/reset sequence for LPDDR2 port
-assign test_software_reset_n=(sample[1:0]==2'b10)?1'b0:1'b1;
-assign test_global_reset_n   =(sample[3:2]==2'b10)?1'b0:1'b1;
-assign test_start_n         =(sample[4:3]==2'b01)?1'b0:1'b1;
+assign test_software_reset_n	= (sample[1:0] == 2'b10) ? 1'b0 : 1'b1;
+assign test_global_reset_n   	= (sample[3:2] == 2'b10) ? 1'b0 : 1'b1;
+assign test_start_n         	= (sample[4:3] == 2'b01) ? 1'b0 : 1'b1;
 
 endmodule

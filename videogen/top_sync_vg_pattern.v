@@ -37,7 +37,7 @@ parameter H_BP        = 12'd148;
 parameter H_SYNC      = 12'd44; 
 parameter HV_OFFSET_0 = 12'd0; 
 parameter HV_OFFSET_1 = 12'd0; 
-parameter PATTERN_RAMP_STEP = 20'h1110; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222 for full screen width
+parameter PATTERN_RAMP_STEP = 20'h0888; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222 for full screen width
  
 wire reset; 
 
@@ -121,21 +121,19 @@ wire [7:0] b_out;
 	  ); 
      
 	    	
-   always @(posedge clk_in) begin 
-	  if(reset)
-	  begin
-		adv7513_d <= 24'h0; 
-		adv7513_hs <= 8'h00; 
-		adv7513_vs <= 8'h00; 
-		adv7513_de <= 8'h00; 
-	  end
-	  else begin
-		adv7513_d[23:16] <= r_out; 
-		adv7513_d[15:8] <= g_out; 
-		adv7513_d[7:0] <= b_out; 
-		adv7513_hs <= hs_out; 
-		adv7513_vs <= vs_out; 
-		adv7513_de <= de_out; 
+   always @ (posedge clk_in or posedge reset) begin 
+		if (reset) begin
+			adv7513_d <= 24'h0; 
+			adv7513_hs <= 8'h00; 
+			adv7513_vs <= 8'h00; 
+			adv7513_de <= 8'h00; 
+		end else begin
+			adv7513_d[23:16] <= r_out; 
+			adv7513_d[15:8]  <= g_out; 
+			adv7513_d[7:0]   <= b_out; 
+			adv7513_hs <= hs_out; 
+			adv7513_vs <= vs_out; 
+			adv7513_de <= de_out; 
 	  end
    end 
 	

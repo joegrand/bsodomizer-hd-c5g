@@ -59,9 +59,13 @@ reg intram_wren;
 
 // LPDDR2
 //reg  [4:0]   write_count;
-reg [X_BITS-1:0] avl_x;
-reg [Y_BITS-1:0] avl_y;
-
+//reg [X_BITS-1:0] avl_x;
+//reg [Y_BITS-1:0] avl_y;
+reg last_vsync;
+reg last_hsync;
+reg got_vsync;
+		
+		
 // FIFO
 reg [31:0] fifo_data; 	// data written into fifo
 wire [31:0] fifo_q; 		// data read from fifo
@@ -177,11 +181,11 @@ always @ (posedge clk_in or posedge reset) begin
 		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
 		  next_pattern      <= 1'b1;
 		end
-		if ((prng_data > 'h23456789) && (dn_in)) begin  // set threshold for selecting black or white pixels
+		if (prng_data > 'h23456789) begin  // set threshold for selecting black or white pixels
 		  r_out <= 8'h00; // black
 		  g_out <= 8'h00; 
 		  b_out <= 8'h00;  
-		end else if (dn_in) begin
+		end else begin
 		  r_out <= 8'hFF; // white
 		  g_out <= 8'hFF; 
 		  b_out <= 8'hFF; 
@@ -210,25 +214,21 @@ always @ (posedge clk_in or posedge reset) begin
       end 	 
     end
     3'b100 : begin	// ramp (full screen width, vertical greyscale gradient)
-	   if (dn_in) begin
 			r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
 			g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
 			b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		
-			if ((x == total_active_pix - 1) && (dn_in))
-			  ramp_values <= 0; 
+		 
+			if ((x == total_active_pix - 1) && (dn_in)) 
+				ramp_values <= 0; 
 			else if ((x == 0) && (dn_in)) 
-			  ramp_values <= ramp_step; 
+				ramp_values <= ramp_step; 
 			else if (dn_in) 
-			  ramp_values <= ramp_values + ramp_step;
-		end
+				ramp_values <= ramp_values + ramp_step; 
     end
     /*3'b101 : begin	// tesselated rainbow pattern
-	   if (dn_in) begin
 			r_out <= x;
 			g_out <= y;
 			b_out <= x + y;	 
-		end
     end*/
 	 3'b101 : begin // color bar pattern
 	   if (dn_in) begin
@@ -311,6 +311,7 @@ always @ (posedge clk_in or posedge reset) begin
   end
 end 
   
+  
  
 ////////////	LPDDR2 	////////////
 
@@ -322,15 +323,23 @@ begin
 		avl_address <= 27'h0;
 		fifo_wrreq <= 1'b0;
 		fifo_clr <= 1'b1;
+		last_vsync <= 1'b0;
+		last_hsync <= 1'b0;
+		got_vsync <= 1'b0;
    end else begin
 		case (read_state)
 		0 : begin // idle
-			avl_address <= 0; 
+			avl_address <= 27'h0; 
 			fifo_clr <= 1'b1;
-			//avl_x <= x;
-			//avl_y <= y;				
-			//if ((avl_x == 0) && (avl_y == 0)) // wait for beginning of frame
-				read_state <= 1;
+			
+			// check for beginning of frame
+			if ((vn_in == 1'b1) && (last_vsync == 1'b0))
+				got_vsync <= 1'b1;
+			if ((got_vsync == 1'b1) && (hn_in == 1'b1) && (last_hsync == 1'b0)) // both hsync and vsync edges have been detected
+				read_state <= 1; // go to the next state
+				
+			last_vsync <= vn_in;
+			last_hsync <= hn_in;
 		end
 		1 : begin
 			if (local_init_done) begin
@@ -346,7 +355,7 @@ begin
 			if(avl_readdatavalid) begin // latch read data
 				fifo_data <= avl_readdata;	// push received data from LPDDR2 into fifo						
 				avl_read <= 1'b0;
-				avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location				
+				//avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location				
 				if (avl_address < ('d1920 * 'd1080) - 1) begin
 				  avl_address <= avl_address + 1;
 				  read_state <= 1;
@@ -373,7 +382,7 @@ begin
 	  if (x % 8 == 7)  // increment the memory every 8 clocks, since we need to unpack the 1bpp structure
 	  begin
 	    if (x < 'd1920)
-		   intram_address <= intram_address+1;
+		   intram_address <= intram_address + 1;
 	    else
 		   if (y < 'd1080)
 				intram_address <= (y * 'd240); // 240 bytes per line for packed 1bpp structure

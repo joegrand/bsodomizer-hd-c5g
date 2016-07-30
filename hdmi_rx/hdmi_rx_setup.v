@@ -37,6 +37,17 @@ module hdmi_rx_setup(
 reg [23:0] rxsetup [`RXSIZE-1:0];
 assign size = `RXSIZE - 1;
 
+/*reg [7:0] adrmap [3:0];
+
+ 
+initial begin
+	adrmap[0] = 'h98; // RX IO Map
+	adrmap[1] = 'h9A; // RX CP Map
+	adrmap[2] = 'h9E; // RX Repeater Map
+	adrmap[3] = 'h9C; // RX HDMI Map
+end*/
+	
+// set up configuration from https://github.com/esar/hdmilight-v2 and modified to fit our platform 
 initial begin
 	rxsetup [0] = 'h98F480;  // CEC Map I2C address
 	rxsetup [1] = 'h98F57C;  // INFOFRAME Map I2C address
@@ -90,6 +101,55 @@ initial begin
 	rxsetup [49] = 'h687510;  // DDC drive strength
 	rxsetup [50] = 'h9840E2;  // INT1 active high, active until cleared
 end
+
+/*initial begin
+	rxsetup  [0] = 'h0F5B2;
+	rxsetup  [1] = 'h0F8B4;
+	rxsetup  [2] = 'h0F99E;
+	rxsetup  [3] = 'h0FAB0;
+	rxsetup  [4] = 'h0FB9C;
+	rxsetup  [5] = 'h0FD9A;
+	rxsetup  [6] = 'h00106;
+	rxsetup  [7] = 'h002F2;
+	rxsetup  [8] = 'h00340;
+	rxsetup  [9] = 'h00528;
+	rxsetup [10] = 'h006A6;
+	rxsetup [11] = 'h00B44;
+	rxsetup [12] = 'h00C42;
+	rxsetup [13] = 'h0146E;
+	rxsetup [14] = 'h01590;
+	rxsetup [15] = 'h01983;
+	rxsetup [16] = 'h03340;
+	rxsetup [17] = 'h1BA01;
+	rxsetup [18] = 'h24081;
+	rxsetup [19] = 'h27400;
+	rxsetup [20] = 'h39B03;
+	rxsetup [21] = 'h3C101;
+	rxsetup [22] = 'h3C201;
+	rxsetup [23] = 'h3C301;
+	rxsetup [24] = 'h3C401;
+	rxsetup [25] = 'h3C501;
+	rxsetup [26] = 'h3C601;
+	rxsetup [27] = 'h3C701;
+	rxsetup [28] = 'h3C801;
+	rxsetup [29] = 'h3C901;
+	rxsetup [30] = 'h3CA01;
+	rxsetup [31] = 'h3CB01;
+	rxsetup [32] = 'h3CC01;
+	rxsetup [33] = 'h36800;
+	rxsetup [34] = 'h383FE;
+	rxsetup [35] = 'h36F0C;
+	rxsetup [36] = 'h3851F;
+	rxsetup [37] = 'h38770;
+	rxsetup [38] = 'h38D04;
+	rxsetup [39] = 'h38E1E;
+	rxsetup [40] = 'h31A81;
+	rxsetup [41] = 'h357DA;
+	rxsetup [42] = 'h35801;
+	rxsetup [43] = 'h36CA4;
+	rxsetup [44] = 'h34840;
+end*/
+
 
 always @(posedge clk) begin
 	if (reset) begin

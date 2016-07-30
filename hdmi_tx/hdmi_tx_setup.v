@@ -68,32 +68,6 @@ initial begin
 	txsetup [27] = 'h72FA7D; // Nbr of times to search for good phase
 end
 
-/*initial begin
-	txsetup [0] = 'h721500;
-	txsetup [1] = 'h721670;
-	txsetup [2] = 'h721846;
-	txsetup [3] = 'h724000;
-	txsetup [4] = 'h7249A8;
-	txsetup [5] = 'h724C00;
-	txsetup [6] = 'h7294C0;
-	txsetup [7] = 'h729803;
-	txsetup [8] = 'h729902;
-	txsetup [9] = 'h729AE0;
-	txsetup [10] = 'h729C30;
-	txsetup [11] = 'h729D61;
-	txsetup [12] = 'h72A2A4;
-	txsetup [13] = 'h72A3A4;
-	txsetup [14] = 'h72A504;
-	txsetup [15] = 'h72AB40;
-	txsetup [16] = 'h72AF04;
-	txsetup [17] = 'h72BAA0;
-	txsetup [18] = 'h72D1FF;
-	txsetup [19] = 'h72DED8;
-	txsetup [20] = 'h72E0D0;
-	txsetup [21] = 'h72E201;
-	txsetup [22] = 'h72E460;
-	txsetup [23] = 'h72F900;
-end*/
 
 always @(posedge clk) begin
 	if (reset) begin
