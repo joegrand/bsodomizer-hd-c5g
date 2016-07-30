@@ -22,7 +22,7 @@ module pattern_vg
 	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
 	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
-	output reg  [26:0]  avl_address,       	//       .address
+	output reg  [26:0] avl_address,       		//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
 	output reg          avl_read,          	//       .read
@@ -33,9 +33,9 @@ module pattern_vg
 //  Constant declarations
 //=======================================================
 
-//parameter	INTRAM_DATA_WIDTH	=	8;			//	8 bits/word
+parameter	INTRAM_DATA_WIDTH	=	8;			//	8 bits/word
 //parameter	INTRAM_DATA_NUM	=	259200;	// 1920 * 1080 / 8	
-//parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
+parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
 
 
  //=======================================================
@@ -43,8 +43,7 @@ module pattern_vg
 //=======================================================
 
 // State machine
-//reg  [3:0]   c_state;
-reg read_state;
+reg  [3:0]   read_state;
 
 // PRNG 
 reg load_init_pattern;
@@ -54,18 +53,21 @@ reg next_pattern;
 reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp values 
 
 // Internal RAM
-/*reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
+reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
 reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
-reg intram_wren;*/
+reg intram_wren;
 
 // LPDDR2
 //reg  [4:0]   write_count;
+reg [X_BITS-1:0] avl_x;
+reg [Y_BITS-1:0] avl_y;
 
 // FIFO
 reg [31:0] fifo_data; 	// data written into fifo
 wire [31:0] fifo_q; 		// data read from fifo
 reg fifo_rdreq;
 reg fifo_wrreq;
+reg fifo_clr;				// asynchronous clear
 
 
 //=======================================================
@@ -73,7 +75,7 @@ reg fifo_wrreq;
 //=======================================================
 
 wire [31:0] prng_data; 	// PRNG output
-//wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
+wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
 
 
 //=======================================================
@@ -81,6 +83,7 @@ wire [31:0] prng_data; 	// PRNG output
 //=======================================================
 
 assign avl_burstbegin = avl_read;
+//assign avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
 
 
 //=======================================================
@@ -88,12 +91,13 @@ assign avl_burstbegin = avl_read;
 //=======================================================
 
 fifo fifo_inst (
+	.aclr (fifo_clr),
 	.data (fifo_data),
-	.rdclk (clk_in), // 148.5MHz
+	.rdclk (clk_in), // PCLK
 	.rdreq (fifo_rdreq),
-	.wrclk (avl_clk), // 297MHz (2xPCLK)
+	.wrclk (avl_clk), // 2x PCLK
 	.wrreq (fifo_wrreq),
-	.q (avl_q),
+	.q (fifo_q),
 	.rdempty (),
 	.wrfull ()
 	);
@@ -110,13 +114,13 @@ ca_prng prng (
 );
 
 // Internal RAM (1-port)
-/*int_ram	int_ram_inst (
+int_ram	int_ram_inst (
 	.address (intram_address),
 	.clock (clk_in),
 	.data (intram_data_in),
 	.wren (intram_wren),
 	.q (intram_q)
-);*/
+);
 
  
 //=======================================================
@@ -155,14 +159,7 @@ always @ (posedge clk_in or posedge reset) begin
     den_out <= dn_in;
     
     case (dip_sw)
-    3'b000 : begin	// no pattern (black screen)
-	   if (dn_in) begin
-			r_out <= 8'h00; 
-			g_out <= 8'h00; 
-			b_out <= 8'h00; 
-		end
-    end
-    3'b001 : begin	// border (thin white line around edge of frame)
+    3'b000 : begin	// border (thin white line around edge of frame)
 		if ((dn_in) && ((y == 12'b0) || (x == 12'b0) || (x == total_active_pix - 1) || (y == total_active_lines -  1))) begin 
 			r_out <= 8'hFF; 
 			g_out <= 8'hFF; 
@@ -173,6 +170,23 @@ always @ (posedge clk_in or posedge reset) begin
 			b_out <= 8'h00;
 		end
     end
+    3'b001 : begin	// PRNG (static)
+		if (prng_data == 8'h00)   // on first run, we need to load the initialization pattern
+		  load_init_pattern <= 1'b1;
+		else begin
+		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
+		  next_pattern      <= 1'b1;
+		end
+		if ((prng_data > 'h23456789) && (dn_in)) begin  // set threshold for selecting black or white pixels
+		  r_out <= 8'h00; // black
+		  g_out <= 8'h00; 
+		  b_out <= 8'h00;  
+		end else if (dn_in) begin
+		  r_out <= 8'hFF; // white
+		  g_out <= 8'hFF; 
+		  b_out <= 8'hFF; 
+		end	 
+    end	  
     3'b010 : begin	// moire vertical (alternate black and white pixels every other x)
       if ((dn_in) && x[0] == 1'b1) begin 
         r_out <= 8'hFF; 
@@ -195,41 +209,28 @@ always @ (posedge clk_in or posedge reset) begin
         b_out <= 8'h00; 
       end 	 
     end
-    3'b100 : begin	// ramp (vertical greyscale shading, black to white)
-		r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-		b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
-
-		if ((x == total_active_pix - 1) && (dn_in))
-		  ramp_values <= 0; 
-		else if ((x == 0) && (dn_in)) 
-		  ramp_values <= ramp_step; 
-		else if (dn_in) 
-		  ramp_values <= ramp_values + ramp_step;
-    end
-    3'b101 : begin	// PRNG (static)
-		if (prng_data == 8'h00)   // on first run, we need to load the initialization pattern
-		  load_init_pattern <= 1'b1;
-		else begin
-		  load_init_pattern <= 1'b0;	// on subsequent runs, get the next pattern	
-		  next_pattern      <= 1'b1;
+    3'b100 : begin	// ramp (full screen width, vertical greyscale gradient)
+	   if (dn_in) begin
+			r_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+			g_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+			b_out <= ramp_values[B+FRACTIONAL_BITS-1:FRACTIONAL_BITS]; 
+		
+			if ((x == total_active_pix - 1) && (dn_in))
+			  ramp_values <= 0; 
+			else if ((x == 0) && (dn_in)) 
+			  ramp_values <= ramp_step; 
+			else if (dn_in) 
+			  ramp_values <= ramp_values + ramp_step;
 		end
-		if ((prng_data > 'h23456789) && (dn_in)) begin  // set threshold for selecting black or white pixels
-		  r_out <= 8'h00; // black
-		  g_out <= 8'h00; 
-		  b_out <= 8'h00;  
-		end else if (dn_in) begin
-		  r_out <= 8'hFF; // white
-		  g_out <= 8'hFF; 
-		  b_out <= 8'hFF; 
-		end	 
     end
-    /*3'b110 : begin	// tesselated rainbow pattern
-      r_out <= x;
-      g_out <= y;
-      b_out <= x + y;	 
+    /*3'b101 : begin	// tesselated rainbow pattern
+	   if (dn_in) begin
+			r_out <= x;
+			g_out <= y;
+			b_out <= x + y;	 
+		end
     end*/
-	 3'b110 : begin // color bar pattern
+	 3'b101 : begin // color bar pattern
 	   if (dn_in) begin
 			if (x <= 275) begin // 100% white
 			  r_out <= 8'hFF; 
@@ -271,12 +272,24 @@ always @ (posedge clk_in or posedge reset) begin
 			  g_out <= 8'h00; 
 			  b_out <= 8'h00; 
 			end
-		end else begin 
-        r_out <= 8'h00; 
-        g_out <= 8'h00; 
-        b_out <= 8'h00;
 		end
 	 end
+	 3'b110 : begin	// image (1920 x 1080, 1bpp packed, from internal BRAM)
+	   if (dn_in) begin
+			if (intram_q & (8'h80 >> ((x-1) % 8))) begin  // unpack image using a bitmask (x = current pixel on horizontal line)
+			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
+			  g_out <= 8'hC0; 
+			  b_out <= 8'hC0; 
+			end else begin
+			  //r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
+			  //g_out <= 8'h0; 
+			  //b_out <= 8'h80;
+			  r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
+			  g_out <= 8'h71; 
+			  b_out <= 8'hab;
+			end
+		end
+	 end		 
     3'b111 : begin	// image (1920 x 1080, 8bpp)
       /* This is based on the original code below, however there may be a 
        * problem here.  This loop would require a zero cycle turn around time
@@ -293,21 +306,6 @@ always @ (posedge clk_in or posedge reset) begin
 			g_out <= fifo_q[15:8];
 			b_out <= fifo_q[7:0];
 		 end
-		 				
-		 /*3'b111 : begin	// image (1920 x 1080, 1bpp packed)
-			if (intram_q & (8'h80 >> ((x-1) % 8))) begin// unpack image using a bitmask (x = current pixel on horizontal line)
-			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
-			  g_out <= 8'hC0; 
-			  b_out <= 8'hC0; 
-			end else begin
-			  //r_out <= 8'h0; 	// navy blue (BSOD, up through Windows 7)
-			  //g_out <= 8'h0; 
-			  //b_out <= 8'h80;
-			  r_out <= 8'h11; 	// cerulean blue (BSOD, Windows 8 and beyond)
-			  g_out <= 8'h71; 
-			  b_out <= 8'hab;
-			end
-		 end*/
 	 end	 
 	 endcase
   end
@@ -318,38 +316,53 @@ end
 
 always @ (posedge avl_clk or posedge reset)
 begin	 
-   if(reset) begin
-	   read_state <= 1'b0;
+   if(reset) begin 
+	  	read_state <= 0;
 		avl_read <= 1'b0;
 		avl_address <= 27'h0;
 		fifo_wrreq <= 1'b0;
+		fifo_clr <= 1'b1;
    end else begin
 		case (read_state)
-		0 : begin
+		0 : begin // idle
+			avl_address <= 0; 
+			fifo_clr <= 1'b1;
+			//avl_x <= x;
+			//avl_y <= y;				
+			//if ((avl_x == 0) && (avl_y == 0)) // wait for beginning of frame
+				read_state <= 1;
+		end
+		1 : begin
 			if (local_init_done) begin
-				avl_read <= 1'b1; // assert read request
+				avl_read <= 1'b1; // assert LPDDR2 read request
+				fifo_clr <= 1'b0;
 				fifo_wrreq <= 1'b1; // assert fifo write request
 				
 				if (avl_waitrequest_n)  // if read is done, go to the next state
-				read_state <= 1'b1;		 
+				  read_state <= 2;		 
 			end
 		end
-		1 : begin
+		2 : begin
 			if(avl_readdatavalid) begin // latch read data
 				fifo_data <= avl_readdata;	// push received data from LPDDR2 into fifo						
 				avl_read <= 1'b0;
-				avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
-				read_state <= 1'b0;
+				avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location				
+				if (avl_address < ('d1920 * 'd1080) - 1) begin
+				  avl_address <= avl_address + 1;
+				  read_state <= 1;
+				end  
+				else
+				  read_state <= 0; // we're done with the frame, so go back to idle until the next one		  
 			end
 		end
-		default : read_state <= 1'b0;
-	   endcase
+		default : read_state <= 0;
+		endcase
 	end
 end
 
 		
-////////////	SRAM ADDR Generator	  ////////////
-/*always @ (negedge clk_in)
+////////////	SRAM Address Generator	  ////////////
+always @ (negedge clk_in)
 begin	 
 	if(reset)
 	begin
@@ -368,6 +381,6 @@ begin
 				intram_address <= 0;
 	  end
 	end
-end*/
+end
 
 endmodule

@@ -33,6 +33,7 @@
 //agreement for further details.
 
 module fifo (
+	aclr,
 	data,
 	rdclk,
 	rdreq,
@@ -42,6 +43,7 @@ module fifo (
 	rdempty,
 	wrfull);
 
+	input	  aclr;
 	input	[31:0]  data;
 	input	  rdclk;
 	input	  rdreq;
@@ -50,6 +52,13 @@ module fifo (
 	output	[31:0]  q;
 	output	  rdempty;
 	output	  wrfull;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_off
+`endif
+	tri0	  aclr;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_on
+`endif
 
 endmodule
 
@@ -62,7 +71,7 @@ endmodule
 // Retrieval info: PRIVATE: AlmostFullThr NUMERIC "-1"
 // Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "0"
 // Retrieval info: PRIVATE: Clock NUMERIC "4"
-// Retrieval info: PRIVATE: Depth NUMERIC "128"
+// Retrieval info: PRIVATE: Depth NUMERIC "32768"
 // Retrieval info: PRIVATE: Empty NUMERIC "1"
 // Retrieval info: PRIVATE: Full NUMERIC "1"
 // Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
@@ -76,7 +85,7 @@ endmodule
 // Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "0"
 // Retrieval info: PRIVATE: UsedW NUMERIC "1"
 // Retrieval info: PRIVATE: Width NUMERIC "32"
-// Retrieval info: PRIVATE: dc_aclr NUMERIC "0"
+// Retrieval info: PRIVATE: dc_aclr NUMERIC "1"
 // Retrieval info: PRIVATE: diff_widths NUMERIC "0"
 // Retrieval info: PRIVATE: msb_usedw NUMERIC "0"
 // Retrieval info: PRIVATE: output_width NUMERIC "32"
@@ -90,16 +99,19 @@ endmodule
 // Retrieval info: PRIVATE: wsUsedW NUMERIC "0"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
-// Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "128"
+// Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "32768"
 // Retrieval info: CONSTANT: LPM_SHOWAHEAD STRING "OFF"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "dcfifo"
 // Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "32"
-// Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "7"
+// Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "15"
 // Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "5"
+// Retrieval info: CONSTANT: READ_ACLR_SYNCH STRING "OFF"
 // Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
+// Retrieval info: CONSTANT: WRITE_ACLR_SYNCH STRING "OFF"
 // Retrieval info: CONSTANT: WRSYNC_DELAYPIPE NUMERIC "5"
+// Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT GND "aclr"
 // Retrieval info: USED_PORT: data 0 0 32 0 INPUT NODEFVAL "data[31..0]"
 // Retrieval info: USED_PORT: q 0 0 32 0 OUTPUT NODEFVAL "q[31..0]"
 // Retrieval info: USED_PORT: rdclk 0 0 0 0 INPUT NODEFVAL "rdclk"
@@ -108,6 +120,7 @@ endmodule
 // Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
 // Retrieval info: USED_PORT: wrfull 0 0 0 0 OUTPUT NODEFVAL "wrfull"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
+// Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @data 0 0 32 0 data 0 0 32 0
 // Retrieval info: CONNECT: @rdclk 0 0 0 0 rdclk 0 0 0 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0

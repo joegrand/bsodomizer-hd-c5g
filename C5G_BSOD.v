@@ -44,16 +44,17 @@ module C5G_BSOD(
 	inout 		          		I2C_SDA,
 
 	//////////// HDMI-RX //////////
-//	input		   	       		HDMI_RX_CLK,
-//	input		    	[23:0]		HDMI_RX_D,
-//	output		          		HDMI_RX_DE,
-//	output		          		HDMI_RX_HS,
-//	input 		          		HDMI_RX_INT,
-//	output		          		HDMI_RX_VS,
-//
-//	//////////// I2C for HDMI-RX //////////
-//	output		          		HDMI_RX_I2C_SCL,
-//	inout 		          		HDMI_RX_I2C_SDA,
+	output							HDMI_RX_RST_n,
+	input		   	       		HDMI_RX_CLK,
+	input		    	[23:0]		HDMI_RX_D,
+	input			          		HDMI_RX_DE,
+	input			          		HDMI_RX_HS,
+	input 		          		HDMI_RX_INT,
+	input			          		HDMI_RX_VS,
+
+	//////////// I2C for HDMI-RX //////////
+	output		          		HDMI_RX_I2C_SCL,
+	inout 		          		HDMI_RX_I2C_SDA,
 	
 	//////////// SDCARD //////////
 	output		          		SD_CLK,
@@ -72,8 +73,8 @@ module C5G_BSOD(
    inout       	[3:0]  		DDR2LP_DQS_p,
    input              			DDR2LP_OCT_RZQ,
 
-	//////////// GPIO, GPIO connect to GPIO Default //////////
-	inout 		    [35:0]		GPIO
+	//////////// GPIO //////////
+	output							HDMI_SW
 );
  
   
@@ -95,7 +96,7 @@ wire hdmi_tx_clk_297; // 2x PCLK for use w/ LPDDR2 port 1 clock (each data read 
 wire hdmi_tx_pll_locked;
 
 // LPDDR2
-wire afi_clk; // clocks used for Avalon_bus_RW_Test
+wire afi_clk; // Avalon bus clock
 wire afi_half_clk;
 
 wire fpga_lpddr2_test_pass/*synthesis keep*/;
@@ -137,7 +138,8 @@ wire 	[2:0]		fpga_lpddr2_avl_1_size;         //    .burstcount
 assign LEDG[0] = state; 	// Heartbeat for testing
 
 assign RXnTX = SW[9]; 		// Mode select: TX (0), RX/capture (1)
-assign GPIO[30] = !RXnTX;	// HDMI_SW output to TS3DV642 HDMI Switch: Passthrough (0), FPGA (1)
+assign HDMI_SW = !RXnTX;	// HDMI_SW output to TS3DV642 HDMI Switch: Passthrough (0), FPGA (1)
+assign HDMI_RX_RST_n = CPU_RESET_n;
 
 // blink LED until LPDDR2 RAM test is complete
 assign LEDG[1] = (fpga_lpddr2_local_init_done & fpga_lpddr2_local_cal_success) ? (fpga_lpddr2_test_complete ? 1'b1 : state):1'b0;
@@ -151,7 +153,7 @@ assign fpga_lpddr2_avl_1_size = 3'b001;
 //=======================================================
 
 // PLL for 148.5MHz PCLK generation
-ALTCLKCTRL clk (
+ALTCLKCTRL altclk (
 	.inclk(CLOCK_50_B8A),
 	.outclk(altclk_out)
 	);
@@ -159,13 +161,13 @@ ALTCLKCTRL clk (
 hdmi_tx_pll pll (
 	.refclk(altclk_out),
 	.rst(!CPU_RESET_n),
-	.outclk_0(hdmi_tx_clk_148_5),
-	.outclk_1(hdmi_tx_clk_297),
+	.outclk_0(hdmi_tx_clk_148_5), // PCLK
+	.outclk_1(hdmi_tx_clk_297),   // 2x PCLK
 	.locked(hdmi_tx_pll_locked)
 );
 
 // ADV7513 HDMI Transceiver
-hdmi_tx_ctrl hdmi (
+hdmi_tx_ctrl hdmi_tx (
 	.clk(CLOCK_50_B5B),
 	.reset(!CPU_RESET_n),
 	.scl(I2C_SCL),
@@ -195,24 +197,14 @@ top_sync_vg_pattern vg (
 );
 
 // ADV7611 HDMI Receiver
-//hdmi_rx_ctrl hdmi (
-//	.clk(CLOCK_50_B5B),
-//	.reset(!CPU_RESET_n), 
-//	.scl(HDMI_RX_I2C_SCL),
-//	.sda(HDMI_RX_I2C_SDA),
-//	.intrx(HDMI_RX_INT)
-//);
-
-// Video Receiver
-//top_sync_vr vr (
-//	.resetb(CPU_RESET_n & RXnTX),		// Start if RX mode selected	
-//	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
-//	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
-//	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
-//	.adv7611_d(HDMI_RX_D),			   // Data lines
-//	.adv7611_de(HDMI_RX_DE)  			// Data enable
-//);
-  	
+hdmi_rx_ctrl hdmi_rx (
+	.clk(CLOCK_50_B5B),
+	.reset(!CPU_RESET_n), 
+	.scl(HDMI_RX_I2C_SCL),
+	.sda(HDMI_RX_I2C_SDA),
+	.intrx(HDMI_RX_INT)
+);
+ 	
 	
 fpga_lpddr2 fpga_lpddr2_inst(
 /*input  wire       */   .pll_ref_clk(CLOCK_50_B5B),           	//	pll_ref_clk.clk

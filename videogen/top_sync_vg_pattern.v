@@ -37,10 +37,12 @@ parameter H_BP        = 12'd148;
 parameter H_SYNC      = 12'd44; 
 parameter HV_OFFSET_0 = 12'd0; 
 parameter HV_OFFSET_1 = 12'd0; 
-parameter PATTERN_RAMP_STEP = 20'h0222; //20'h0444; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222
+parameter PATTERN_RAMP_STEP = 20'h1110; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222 for full screen width
  
 wire reset; 
+
 assign reset = !resetb; 
+assign adv7513_clk = !clk_in; 
     
 wire [11:0] x_out; 
 wire [12:0] y_out; 
@@ -48,7 +50,6 @@ wire [7:0] r_out;
 wire [7:0] g_out; 
 wire [7:0] b_out; 
 
-reg pclk;
     
    /* ********************* */ 
    sync_vg #(.X_BITS(12), .Y_BITS(12)) sync_vg   
@@ -119,20 +120,8 @@ reg pclk;
 	  .avl_burstbegin(avl_burstbegin)
 	  ); 
      
-	  
-	// clock divider to create PCLK (148.5MHz) from 2xPCLK (needed for LPDDR2/pattern_vg.v)
-	/*always@(posedge avl_clk or posedge reset) begin
-		if(reset) 
-			pclk <= 1'b0; 
-		else 
-			pclk <= !pclk;
-	end*/
-	    
-   assign adv7513_clk = ~clk_in; 
-   //assign adv7513_clk = !pclk;
-	
-   always @(posedge clk_in or posedge reset) begin 
-	//always @(posedge pclk or posedge reset) begin 
+	    	
+   always @(posedge clk_in) begin 
 	  if(reset)
 	  begin
 		adv7513_d <= 24'h0; 
