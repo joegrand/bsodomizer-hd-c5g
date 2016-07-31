@@ -24,9 +24,9 @@
 // agreement for further details.
 
 
-// $Id: //acds/rel/15.1/ip/merlin/altera_merlin_slave_agent/altera_merlin_slave_agent.sv#1 $
+// $Id: //acds/rel/16.0/ip/merlin/altera_merlin_slave_agent/altera_merlin_slave_agent.sv#1 $
 // $Revision: #1 $
-// $Date: 2015/08/09 $
+// $Date: 2016/02/08 $
 // $Author: swbranch $
 
 `timescale 1 ns / 1 ns

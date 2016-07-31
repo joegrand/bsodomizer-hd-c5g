@@ -11,9 +11,9 @@
 // agreement for further details.
 
 
-// $Id: //acds/rel/15.1/ip/merlin/altera_avalon_mm_bridge/altera_avalon_mm_bridge.v#1 $
+// $Id: //acds/rel/16.0/ip/merlin/altera_avalon_mm_bridge/altera_avalon_mm_bridge.v#1 $
 // $Revision: #1 $
-// $Date: 2015/08/09 $
+// $Date: 2016/02/08 $
 // $Author: swbranch $
 // --------------------------------------
 // Avalon-MM pipeline bridge

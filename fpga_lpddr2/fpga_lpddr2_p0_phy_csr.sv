@@ -54,7 +54,7 @@ module fpga_lpddr2_p0_phy_csr(
 
 localparam RESET_REQUEST_DELAY = 4;
 
-localparam CSR_IP_VERSION_NUMBER = 151;
+localparam CSR_IP_VERSION_NUMBER = 160;
 
 parameter CSR_ADDR_WIDTH       = 8;
 parameter CSR_DATA_WIDTH       = 32;

@@ -14,7 +14,7 @@
 
 `timescale 1 ps / 1 ps
 
-(* altera_attribute = "-name IP_TOOL_NAME altera_mem_if_lpddr2_hard_phy_core; -name IP_TOOL_VERSION 15.1; -name FITTER_ADJUST_HC_SHORT_PATH_GUARDBAND 100" *)
+(* altera_attribute = "-name IP_TOOL_NAME altera_mem_if_lpddr2_hard_phy_core; -name IP_TOOL_VERSION 16.0; -name FITTER_ADJUST_HC_SHORT_PATH_GUARDBAND 100" *)
 module fpga_lpddr2_p0 (
     global_reset_n,
     soft_reset_n,

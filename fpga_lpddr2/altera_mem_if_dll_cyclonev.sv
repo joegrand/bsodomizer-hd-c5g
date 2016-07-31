@@ -17,7 +17,7 @@
 
 `timescale 1 ps / 1 ps
 
-(* altera_attribute = "-name IP_TOOL_NAME altera_mem_if_dll; -name IP_TOOL_VERSION 15.1; -name FITTER_ADJUST_HC_SHORT_PATH_GUARDBAND 100; -name ALLOW_SYNCH_CTRL_USAGE OFF; -name AUTO_CLOCK_ENABLE_RECOGNITION OFF; -name AUTO_SHIFT_REGISTER_RECOGNITION OFF" *)
+(* altera_attribute = "-name IP_TOOL_NAME altera_mem_if_dll; -name IP_TOOL_VERSION 16.0; -name FITTER_ADJUST_HC_SHORT_PATH_GUARDBAND 100; -name ALLOW_SYNCH_CTRL_USAGE OFF; -name AUTO_CLOCK_ENABLE_RECOGNITION OFF; -name AUTO_SHIFT_REGISTER_RECOGNITION OFF" *)
 
 
 module altera_mem_if_dll_cyclonev (

@@ -25,7 +25,7 @@
 			avl_be_0                   : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- byteenable
 			avl_read_req_0             : in    std_logic                     := 'X';             -- read
 			avl_write_req_0            : in    std_logic                     := 'X';             -- write
-			avl_size_0                 : in    std_logic_vector(2 downto 0)  := (others => 'X'); -- burstcount
+			avl_size_0                 : in    std_logic_vector(7 downto 0)  := (others => 'X'); -- burstcount
 			avl_ready_1                : out   std_logic;                                        -- waitrequest_n
 			avl_burstbegin_1           : in    std_logic                     := 'X';             -- beginbursttransfer
 			avl_addr_1                 : in    std_logic_vector(26 downto 0) := (others => 'X'); -- address
@@ -35,7 +35,7 @@
 			avl_be_1                   : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- byteenable
 			avl_read_req_1             : in    std_logic                     := 'X';             -- read
 			avl_write_req_1            : in    std_logic                     := 'X';             -- write
-			avl_size_1                 : in    std_logic_vector(2 downto 0)  := (others => 'X'); -- burstcount
+			avl_size_1                 : in    std_logic_vector(7 downto 0)  := (others => 'X'); -- burstcount
 			mp_cmd_clk_0_clk           : in    std_logic                     := 'X';             -- clk
 			mp_cmd_reset_n_0_reset_n   : in    std_logic                     := 'X';             -- reset_n
 			mp_cmd_clk_1_clk           : in    std_logic                     := 'X';             -- clk

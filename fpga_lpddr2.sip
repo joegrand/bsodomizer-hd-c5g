@@ -1,5 +1,5 @@
 set_global_assignment -entity "fpga_lpddr2" -library "lib_fpga_lpddr2" -name IP_TOOL_NAME "altera_mem_if_lpddr2_emif"
-set_global_assignment -entity "fpga_lpddr2" -library "lib_fpga_lpddr2" -name IP_TOOL_VERSION "15.1"
+set_global_assignment -entity "fpga_lpddr2" -library "lib_fpga_lpddr2" -name IP_TOOL_VERSION "16.0"
 set_global_assignment -entity "fpga_lpddr2" -library "lib_fpga_lpddr2" -name IP_TOOL_ENV "mwpim"
 set_global_assignment -library "lib_fpga_lpddr2" -name SPD_FILE [file join $::quartus(sip_path) "fpga_lpddr2.spd"]
 

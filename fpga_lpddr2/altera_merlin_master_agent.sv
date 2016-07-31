@@ -11,9 +11,9 @@
 // agreement for further details.
 
 
-// $Id: //acds/rel/15.1/ip/merlin/altera_merlin_master_agent/altera_merlin_master_agent.sv#1 $
+// $Id: //acds/rel/16.0/ip/merlin/altera_merlin_master_agent/altera_merlin_master_agent.sv#1 $
 // $Revision: #1 $
-// $Date: 2015/08/09 $
+// $Date: 2016/02/08 $
 // $Author: swbranch $
 
 // --------------------------------------
@@ -236,10 +236,19 @@ module altera_merlin_master_agent
    // --------------------------------------
    // Command Control
    // --------------------------------------
+   reg hold_waitrequest;
+
+   always @ (posedge clk, posedge reset) begin
+      if (reset)
+         hold_waitrequest <= 1'b1;
+      else
+         hold_waitrequest <= 1'b0;
+   end  
+   
    always_comb begin
       cp_valid = 0;
 
-      if (av_write || av_read)
+      if ((av_write || av_read) && ~hold_waitrequest)
          cp_valid = 1;
    end
 
@@ -274,15 +283,6 @@ module altera_merlin_master_agent
    // --------------------------------------
    // Backpressure & Readdatavalid
    // --------------------------------------
-   reg hold_waitrequest;
-
-   always @ (posedge clk, posedge reset) begin
-      if (reset)
-         hold_waitrequest <= 1'b1;
-      else
-         hold_waitrequest <= 1'b0;
-   end  
-
    always_comb begin
       rp_ready              = 1;
       av_readdatavalid      = 0;

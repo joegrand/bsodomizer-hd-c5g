@@ -30,7 +30,7 @@
   <pin name="avl_be_0[3..0]" direction="input" scope="external" />
   <pin name="avl_read_req_0" direction="input" scope="external" />
   <pin name="avl_write_req_0" direction="input" scope="external" />
-  <pin name="avl_size_0[2..0]" direction="input" scope="external" />
+  <pin name="avl_size_0[7..0]" direction="input" scope="external" />
   <pin name="avl_ready_1" direction="output" scope="external" />
   <pin name="avl_burstbegin_1" direction="input" scope="external" />
   <pin name="avl_addr_1[26..0]" direction="input" scope="external" />
@@ -40,7 +40,7 @@
   <pin name="avl_be_1[3..0]" direction="input" scope="external" />
   <pin name="avl_read_req_1" direction="input" scope="external" />
   <pin name="avl_write_req_1" direction="input" scope="external" />
-  <pin name="avl_size_1[2..0]" direction="input" scope="external" />
+  <pin name="avl_size_1[7..0]" direction="input" scope="external" />
   <pin name="mp_cmd_clk_0_clk" direction="input" scope="external" />
   <pin name="mp_cmd_reset_n_0_reset_n" direction="input" scope="external" />
   <pin name="mp_cmd_clk_1_clk" direction="input" scope="external" />

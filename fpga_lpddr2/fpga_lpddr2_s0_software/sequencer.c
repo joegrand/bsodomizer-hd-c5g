@@ -3838,7 +3838,21 @@ alt_u32 rw_mgr_mem_calibrate_read_test (alt_u32 rank_bgn, alt_u32 group, alt_u32
 
 static inline alt_u32 rw_mgr_mem_calibrate_read_test_all_ranks (alt_u32 group, alt_u32 num_tries, alt_u32 all_correct, t_btfld *bit_chk, alt_u32 all_groups)
 {
-	return rw_mgr_mem_calibrate_read_test (0, group, num_tries, all_correct, bit_chk, all_groups, 1);
+    alt_u32 success = 1;
+    alt_u32 one_test_success;
+    alt_u32 i = 0;
+    if (num_tries <= 0) num_tries = 1;
+    for (i = 0; i < num_tries; i++)
+    {
+        one_test_success = rw_mgr_mem_calibrate_read_test (0, group, 1, all_correct, bit_chk, all_groups, 1);
+        success = success & one_test_success;
+        if (success == 0)
+        {
+            break;
+        }
+    }
+    
+    return success;
 }
 
 #if ENABLE_DELAY_CHAIN_WRITE
@@ -4028,7 +4042,7 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 	
 alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 {
-	alt_u32 i, d, v, p, sr;
+	alt_u32 i, d, v, p, sr, j;
 	alt_u32 max_working_cnt;
 	alt_u32 fail_cnt;
 	t_btfld bit_chk;
@@ -4089,7 +4103,7 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 				DPRINT(2, "find_dqs_en_phase: begin: vfifo=%lu ptap=%lu dtap=%lu", BFM_GBL_GET(vfifo_idx), p, d);
 				scc_mgr_set_dqs_en_phase_all_ranks(grp, p);
 
-				test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0);
+				test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0);
 
 				//if (p ==0 && d == 0)
 				sample_di_data(bit_chk, work_bgn, d, i, p);
@@ -4107,7 +4121,7 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 	//USER * Step 1 : First push vfifo until we get a failing read *
 	for (v = 0; v < VFIFO_SIZE; ) {
 		DPRINT(2, "find_dqs_en_phase: vfifo %lu", BFM_GBL_GET(vfifo_idx));
-		test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0);
+		test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0);
 		if (!test_status) {
 			fail_cnt++;
 
@@ -4144,10 +4158,10 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 					continue;
 				}
 #endif				
-                                DPRINT(2, "find_dqs_en_phase: begin: vfifo=%lu ptap=%lu dtap=%lu", BFM_GBL_GET(vfifo_idx), p, d);
+				DPRINT(2, "find_dqs_en_phase: begin: vfifo=%lu ptap=%lu dtap=%lu", BFM_GBL_GET(vfifo_idx), p, d);
 				scc_mgr_set_dqs_en_phase_all_ranks(grp, p);
 
-				test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0);
+				test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0);
 
 				if (test_status) {
 					max_working_cnt = 1;
@@ -4211,7 +4225,7 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 			
 			scc_mgr_set_dqs_en_delay_all_ranks(grp, d);
 				
-			if (rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0)) {
+			if (rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0)) {
 				found_begin = 1;
 				work_bgn = tmp_delay;
 				break;
@@ -4312,11 +4326,14 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 			p = 0;
 			rw_mgr_incr_vfifo(grp, &v);
 		}
+
+		j = 0;
 		
 		found_end = 0;
 		for (; i < VFIFO_SIZE + 1; i++) {
 			for (; p <= IO_DQS_EN_PHASE_MAX; p++, work_end += IO_DELAY_PER_OPA_TAP) {
 				DPRINT(2, "find_dqs_en_phase: end: vfifo=%lu ptap=%lu dtap=%lu", BFM_GBL_GET(vfifo_idx), p, (long unsigned int)0);
+				j++;
 #if SKIP_PTAP_0_DQS_EN_CAL
 				if ( p == 0 ) {
 					max_working_cnt++;
@@ -4324,8 +4341,17 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 				}
 #endif
 				scc_mgr_set_dqs_en_phase_all_ranks(grp, p);
+
+				test_status = rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0);
 				
-				if (!rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0)) {
+				// Check if the first edge we try fails
+				// This indicates that the begin edge that we found was fuzzy, so we adjust the begin edge
+				if (!test_status && (j == 1))
+				{
+					work_bgn = work_end;
+				}
+				else if (!test_status)
+				{
 					found_end = 1;
 					break;
 				} else {
@@ -4404,7 +4430,7 @@ alt_u32 rw_mgr_mem_calibrate_vfifo_find_dqs_en_phase (alt_u32 grp)
 			DPRINT(2, "find_dqs_en_phase: end-2: dtap=%lu", d);
 			scc_mgr_set_dqs_en_delay_all_ranks(grp, d);
 
-			if (!rw_mgr_mem_calibrate_read_test_all_ranks (grp, 1, PASS_ONE_BIT, &bit_chk, 0)) {
+			if (!rw_mgr_mem_calibrate_read_test_all_ranks (grp, 5, PASS_ONE_BIT, &bit_chk, 0)) {
 				break;
 			}
 		}
@@ -6153,6 +6179,15 @@ alt_u32 rw_mgr_mem_calibrate_lfifo (void)
 	//USER reset the fifos to get pointers to known state 
 
 	IOWR_32DIRECT (PHY_MGR_CMD_FIFO_RESET, 0, 0);
+   
+#if SET_FIX_READ_LATENCY_ENABLE      	 
+   if(gbl->curr_read_lat < (FIX_READ_LATENCY -1) ) {
+      gbl->curr_read_lat = FIX_READ_LATENCY -2;  	
+   } else {
+     //Mark as fail by changing found_one back to 0
+      found_one = 0 ;
+   }
+#endif 
 
 	if (found_one) {
 		//USER add a fudge factor to the read latency that was determined 

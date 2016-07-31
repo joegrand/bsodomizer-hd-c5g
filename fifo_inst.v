@@ -1,11 +1,11 @@
 fifo	fifo_inst (
-	.aclr ( aclr_sig ),
+	.clock ( clock_sig ),
 	.data ( data_sig ),
-	.rdclk ( rdclk_sig ),
 	.rdreq ( rdreq_sig ),
-	.wrclk ( wrclk_sig ),
+	.sclr ( sclr_sig ),
 	.wrreq ( wrreq_sig ),
+	.empty ( empty_sig ),
+	.full ( full_sig ),
 	.q ( q_sig ),
-	.rdempty ( rdempty_sig ),
-	.wrfull ( wrfull_sig )
+	.usedw ( usedw_sig )
 	);

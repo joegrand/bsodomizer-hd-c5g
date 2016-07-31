@@ -17,7 +17,8 @@ module top_sync_vg_pattern (
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire  [31:0] avl_readdata,      	//       .readdata
 	output wire         avl_read,          	//       .read
-	output wire			  avl_burstbegin			//			.burstbegin
+	output wire			  avl_burstbegin,			//			.burstbegin
+	output wire  [7:0]  avl_burstcount			//			.burstcount
 ); 
 /* ************************************* */ 
  
@@ -49,6 +50,8 @@ wire [12:0] y_out;
 wire [7:0] r_out; 
 wire [7:0] g_out; 
 wire [7:0] b_out; 
+
+wire de, vs, hs, field, vs_out, hs_out, de_out;
 
     
    /* ********************* */ 
@@ -117,11 +120,15 @@ wire [7:0] b_out;
 	  .avl_readdatavalid(avl_readdatavalid),                 
 	  .avl_readdata(avl_readdata),                      
 	  .avl_read(avl_read),                          
-	  .avl_burstbegin(avl_burstbegin)
+	  .avl_burstbegin(avl_burstbegin),
+	  .avl_burstcount(avl_burstcount)
 	  ); 
      
-	    	
-   always @ (posedge clk_in or posedge reset) begin 
+	  
+	/* The signals hs, vs, and de are reclocked in pattern_vg from sync_vg
+	 * Since data is also clocked on the same clock edge as control signals
+	 */
+   always @ (negedge clk_in or posedge reset) begin 
 		if (reset) begin
 			adv7513_d <= 24'h0; 
 			adv7513_hs <= 8'h00; 
