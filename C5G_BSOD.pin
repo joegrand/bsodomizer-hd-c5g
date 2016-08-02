@@ -70,7 +70,7 @@
  -- Pin directions (input, output or bidir) are based on device operating in user mode.
  ---------------------------------------------------------------------------------
 
-Quartus Prime Version 16.0.0 Build 211 04/27/2016 SJ Lite Edition
+Quartus Prime Version 16.0.1 Build 218 06/01/2016 SJ Lite Edition
 CHIP  "C5G_BSOD"  ASSIGNED TO AN: 5CGXFC5C6F27C7
 
 Pin Name/Usage               : Location  : Dir.   : I/O Standard      : Voltage : I/O Bank  : User Assignment
@@ -596,7 +596,7 @@ GND                          : R2        : gnd    :                   :         
 VCCH_GXBL                    : R3        : power  :                   : 2.5V    :           :                
 GND                          : R4        : gnd    :                   :         :           :                
 VCCE_GXBL                    : R5        : power  :                   : 1.1V    :           :                
-TMS                          : R6        : input  :                   :         : 3A        :                
+altera_reserved_tms          : R6        : input  : 3.3-V LVTTL       :         : 3A        : N              
 GND                          : R7        : gnd    :                   :         :           :                
 HDMI_RX_D[10]                : R8        : input  : 3.3-V LVTTL       :         : 3A        : Y              
 HDMI_RX_D[11]                : R9        : input  : 3.3-V LVTTL       :         : 3A        : Y              
@@ -622,7 +622,7 @@ GND                          : T2        :        :                   :         
 GND                          : T3        : gnd    :                   :         :           :                
 VCCH_GXBL                    : T4        : power  :                   : 2.5V    :           :                
 GND                          : T5        : gnd    :                   :         :           :                
-TDI                          : T6        : input  :                   :         : 3A        :                
+altera_reserved_tdi          : T6        : input  : 3.3-V LVTTL       :         : 3A        : N              
 SD_DAT[1]                    : T7        : bidir  : 3.3-V LVTTL       :         : 3A        : Y              
 SD_DAT[3]                    : T8        : bidir  : 3.3-V LVTTL       :         : 3A        : Y              
 RESERVED_INPUT_WITH_WEAK_PULLUP : T9        :        :                   :         : 3B        :                
@@ -675,7 +675,7 @@ GND                          : V3        : gnd    :                   :         
 GND                          : V4        : gnd    :                   :         :           :                
 GND                          : V5        : gnd    :                   :         :           :                
 GND                          : V6        :        :                   :         : B0L       :                
-TDO                          : V7        : output :                   :         : 3A        :                
+altera_reserved_tdo          : V7        : output : 3.3-V LVTTL       :         : 3A        : N              
 SD_DAT[2]                    : V8        : bidir  : 3.3-V LVTTL       :         : 3A        : Y              
 RESERVED_INPUT_WITH_WEAK_PULLUP : V9        :        :                   :         : 3B        :                
 SW[6]                        : V10       : input  : 1.2 V             :         : 3B        : Y              
@@ -725,7 +725,7 @@ GND                          : Y1        :        :                   :         
 GND                          : Y2        :        :                   :         : B0L       :                
 GND                          : Y3        : gnd    :                   :         :           :                
 GND                          : Y4        : gnd    :                   :         :           :                
-TCK                          : Y5        : input  :                   :         : 3A        :                
+altera_reserved_tck          : Y5        : input  : 3.3-V LVTTL       :         : 3A        : N              
 nCSO, DATA4                  : Y6        :        :                   :         : 3A        :                
 VCCIO3A                      : Y7        : power  :                   : 3.3V    : 3A        :                
 HDMI_RX_D[16]                : Y8        : input  : 3.3-V LVTTL       :         : 3A        : Y              

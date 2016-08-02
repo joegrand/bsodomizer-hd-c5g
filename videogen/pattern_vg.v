@@ -16,7 +16,7 @@ module pattern_vg (
 	input  wire 		  avl_clk,					//	   LPDDR2 (read only)
 	input  wire			  local_init_done,	  
 	input  wire         avl_waitrequest_n, 	// 	avl.waitrequest_n
-	output reg  [26:0] avl_address,       		//       .address
+	output reg  [26:0]  avl_address,       	//       .address
 	input  wire         avl_readdatavalid, 	//       .readdatavalid
 	input  wire [31:0]  avl_readdata,      	//       .readdata
 	output reg          avl_read,          	//       .read
@@ -33,7 +33,6 @@ parameter Y_BITS = 13;
 parameter FRACTIONAL_BITS = 12;
 
 parameter	INTRAM_DATA_WIDTH	=	8;			//	8 bits/word
-//parameter	INTRAM_DATA_NUM	=	259200;	// 1920 * 1080 / 8	
 parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
 
 
@@ -54,20 +53,14 @@ reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp value
 // Internal RAM
 reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
 reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
-reg intram_wren;
 
 // LPDDR2
-//reg  [4:0]   write_count;
-//reg [X_BITS-1:0] avl_x;
-//reg [Y_BITS-1:0] avl_y;
 reg [1:0] vsync;
 reg [1:0] hsync;
 		
 // FIFO
 reg [31:0] fifo_data; 	// data written into fifo
 wire [31:0] fifo_q; 		// data read from fifo
-reg fifo_rdreq;
-reg fifo_wrreq;
 reg fifo_clr;				// asynchronous clear
 
 reg [6:0] dat_count;
@@ -82,13 +75,16 @@ wire [31:0] prng_data; 	// PRNG output
 wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
 wire [10:0] fifo_used;
 
+wire rdreq;
+wire wrreq;
+
 
 //=======================================================
 //  Assignments
 //=======================================================
 
-//assign avl_burstbegin = avl_read;
-//assign avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
+assign rdreq = dn_in & !reset;
+assign wrreq = avl_readdatavalid & (read_state == 4'h3) & !reset;
 
 
 //=======================================================
@@ -96,15 +92,15 @@ wire [10:0] fifo_used;
 //=======================================================
 /* rdreq is a syncronous signal.
  * The FIFO is in show-ahead mode, rdreq is an ACK signal in this case
- * In order to prevent extra data red from the FIFO, rdreq is tied
+ * In order to prevent extra data read from the FIFO, rdreq is tied
  * directly to the DE signal coming in, and not reset
  */
 fifo fifo_inst (
 	.sclr (fifo_clr),
 	.clock (clk_in),
 	.data (fifo_data),
-	.rdreq (dn_in & !reset),
-	.wrreq (avl_readdatavalid & (read_state == 4'h3) & !reset),
+	.rdreq (rdreq),
+	.wrreq (wrreq),
 	.q (fifo_q),
 	.empty (),
 	.full (),
@@ -127,7 +123,7 @@ ca_prng prng (
 	.address (intram_address),
 	.clock (clk_in),
 	.data (intram_data_in),
-	.wren (intram_wren),
+	.wren (),
 	.q (intram_q)
 );*/
 
@@ -162,7 +158,6 @@ always @ (posedge clk_in or posedge reset) begin
 	 ramp_values <= 0;
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
-	 fifo_rdreq <= 1'b0;
 	 vsync <= 2'b00;
 	 hsync <= 2'b00;
 	 read_state <= 4'h0;
@@ -287,7 +282,7 @@ always @ (posedge clk_in or posedge reset) begin
 			end
 		end
 	 end
-	 3'b110 : begin	// image (1920 x 1080, 1bpp packed, from internal BRAM)
+	 /*3'b110 : begin	// image (1920 x 1080, 1bpp packed, from internal BRAM)
 	   if (dn_in) begin
 			if (intram_q & (8'h80 >> ((x-1) % 8))) begin  // unpack image using a bitmask (x = current pixel on horizontal line)
 			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
@@ -302,7 +297,7 @@ always @ (posedge clk_in or posedge reset) begin
 			  b_out <= 8'hab;
 			end
 		end
-	 end		 
+	 end*/		 
     3'b111 : begin	// image (1920 x 1080, 8bpp)
 		 vsync <= {vsync[0], vn_in};
 		 hsync <= {hsync[0], hn_in};
@@ -311,10 +306,10 @@ always @ (posedge clk_in or posedge reset) begin
 		 4'h0: begin //Frame sync, FIFO, and AVL reset
 			avl_address <= 27'h0;
 			fifo_clr <= 1'b1;
-			burst_count <= 4'h0;
-			
+			burst_count <= 16'h0;
+			  
 			// check for beginning of frame
-			if(vsync == 2'b01 && hsync == 2'b01) begin
+			if((vsync == 2'b01) && (hsync == 2'b01)) begin
 				read_state <= 4'h1;
 				fifo_clr <= 1'b0;
 			end
@@ -322,11 +317,11 @@ always @ (posedge clk_in or posedge reset) begin
 		 /* I _THINK_ the LPDDR2 IP can take up to 8 burst requests, but the
 		  * docs on it are terrible and don't really explain it well.
 		  * Nor does it really cleanly explain how to tell if its done sending
-		  * data.  So, lets do one at a time, since we have enough margin.
+		  * data. So, lets do one at a time, since we have enough margin.
 		  */
 		 4'h1: begin //Start burst read
 		   // avl_burstcount is always set to 128
-			// 15 128word bursts per line
+			// 15x 128 word bursts per line (32 bits per word, of which 24 bits are used for RGB)
 			if(!fifo_used[10]) begin  //If the FIFO is half full, wait
 				avl_read <= 1'b1;
 				avl_burstbegin <= 1'b1;
@@ -336,19 +331,21 @@ always @ (posedge clk_in or posedge reset) begin
 		 end
 		 4'h2: begin // Wait for wait request from slave
 			avl_burstbegin <= 1'b0;
-			if(avl_waitrequest_n) begin
+			avl_read <= 1'b0;
+			if(avl_waitrequest_n) // If read is done, go to the next state
 			  read_state <= 4'h3;
-			end
 		 end
-		 4'h3: begin //Latch in data in the FIFO
-			if(avl_readdatavalid) begin
+		 4'h3: begin //Latch in data to the FIFO
+			if(avl_readdatavalid) begin // If data is valid
 				fifo_data <= avl_readdata;
 				dat_count <= dat_count + 1'b1;
-			   if(dat_count == 'd127) begin //On THIS clock, we just got the 128th word
+			   if(dat_count == 7'd127) begin //On THIS clock, we just got the 128th word
 				  avl_address <= avl_address + 'd128;
 				  // If this is the 16200th burst, its the last for this frame
-				  if(burst_count > 16'd16199) read_state <= 4'h0;
-				  else read_state <= 4'h1;
+				  if(burst_count > 16'd16199) 
+					read_state <= 4'h0; // go back to idle until the next frame
+				  else 
+				   read_state <= 4'h1; // continue with this frame
 			   end
 			end
 		 end

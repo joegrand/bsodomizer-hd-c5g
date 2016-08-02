@@ -4,70 +4,71 @@ module Avalon_bus_RW_Test (
 		iRST_n,
 		iBUTTON,
 
-		local_init_done,
+		local_init_done,	// LPDDR2 (write only)
 		avl_waitrequest_n,                 
 		avl_address,                                        
 		avl_writedata,                     
 		avl_write,    
 		avl_burstbegin,
-		
 		drv_status_test_complete,
+		c_state,
 		
-		c_state
+		resetb,			// ADV7611 HDMI RX
+		adv7611_hs,
+		adv7611_vs,  
+		adv7611_clk, 
+		adv7611_d,	
+		adv7611_de
 );
 
-parameter      ADDR_W             =     27;
-parameter      DATA_W             =     32;
+parameter	ADDR_W  = 27;
+parameter   DATA_W  = 32;
 
-input          iCLK;
-input          iRST_n;
-input          iBUTTON;
+input	iCLK;
+input iRST_n;
+input iBUTTON;
 
-input				local_init_done;
-input          avl_waitrequest_n;     //  avl.waitrequest_n
-output [ADDR_W-1:0]  avl_address;     //     .address
-output [DATA_W-1:0] avl_writedata;    //     .writedata
-output         avl_write;             //     .write
+input	local_init_done;
+input avl_waitrequest_n;     			//  avl.waitrequest_n
+output [ADDR_W-1:0] avl_address;    //     .address
+output [DATA_W-1:0] avl_writedata;  //     .writedata
+output avl_write;             		//     .write
+output drv_status_test_complete;
+output avl_burstbegin;
+output [3:0] c_state;		
 
-output		drv_status_test_complete;
+input resetb;
+input adv7611_hs;
+input adv7611_vs;
+input adv7611_clk;
+input [23:0] adv7611_d;
+input adv7611_de;
 
-output			avl_burstbegin;
-output	[3:0]c_state;		
 
 //=======================================================
 //  Signal declarations
 //=======================================================
-reg  [1:0]           pre_button;
-reg                  trigger;
-wire [DATA_W-1:0]    y;	
-reg  [3:0]           c_state;		
-reg	                avl_write;
-reg	 [ADDR_W-1:0]   avl_address;  	
-reg	 [DATA_W-1:0]   avl_writedata;
-reg  [4:0]   write_count;
+reg  [1:0]        pre_button;
+reg               trigger;
+wire [DATA_W-1:0] y;	
+reg  [3:0]        c_state;		
+reg	            avl_write;
+reg  [ADDR_W-1:0] avl_address;  	
+reg  [DATA_W-1:0] avl_writedata;
+
 
 // HDMI RX (ADV7611)
-/*reg [7:0] r_in; 
+reg [7:0] r_in; 
 reg [7:0] g_in; 
 reg [7:0] b_in;
 reg hs_in;
 reg vs_in;
-reg de_in;*/
+reg de_in;
 
 
 //=======================================================
 //  Core instantiations
 //=======================================================
-
-// Video Receiver
-/*top_sync_vr vr (
-	.resetb(CPU_RESET_n & RXnTX),		// Start if RX mode selected	
-	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
-	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
-	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
-	.adv7611_d(HDMI_RX_D),			   // Data lines
-	.adv7611_de(HDMI_RX_DE)  			// Data enable
-);*/
 
 
 //=======================================================
@@ -77,15 +78,15 @@ assign avl_burstbegin = avl_write;
 		
 
 // HDMI RX (ADV7611)	
-/*always @(posedge adv7611_clk or posedge reset) begin 
-	if(reset)
-		begin
-			adv7611_d <= 24'h0; 
-			adv7611_hs <= 8'h00; 
-			adv7611_vs <= 8'h00; 
-			adv7611_de <= 8'h00; 
-		end
-	else begin
+always @(posedge adv7611_clk or negedge resetb) begin 
+	if(!resetb) begin
+		r_in <= 8'h00; 
+		g_in <= 8'h00;
+		b_in <= 8'h00;
+		hs_in <= 1'b0; 
+		vs_in <= 1'b0;
+		de_in <= 1'b0;
+	end else begin
 		r_in <= adv7611_d[23:16]; 
 		g_in <= adv7611_d[15:8];
 		b_in <= adv7611_d[7:0];
@@ -93,22 +94,18 @@ assign avl_burstbegin = avl_write;
 		vs_in <= adv7611_vs;
 		de_in <= adv7611_de;
    end
-end*/
-	
+end
+
 	
 always@(posedge iCLK or negedge iRST_n)
 begin
-	if (!iRST_n)
-	begin 
+	if (!iRST_n) begin 
 		pre_button <= 2'b11;
 		trigger <= 1'b0;
 		c_state <= 4'b0;
 		avl_write <= 1'b0;
 		avl_address <= 27'b0;
-		//write_count <= 5'b0;
-	end
-	else
-	begin
+	end else begin
 		pre_button <= {pre_button[0], iBUTTON};
 		trigger <= !pre_button[0] && pre_button[1];
 
@@ -124,14 +121,14 @@ begin
 			else
 				avl_writedata <= 32'h00BB6666;*/
 			
-			if (avl_address <= 27'h7E900)  // sdc set multi-cycle 3
+			/*if (avl_address <= 27'h7E900)  // sdc set multi-cycle 3
 				avl_writedata <= 32'h00FF0000;
 			else if (avl_address >= 27'h7E901 && avl_address <= 27'hFD200)
 				avl_writedata <= 32'h0000FF00;
 			else if (avl_address >= 27'hDF201 && avl_address <= 27'h17BB00)
 				avl_writedata <= 32'h000000FF;
 			else
-				avl_writedata <= 32'h00FFFFFF;
+				avl_writedata <= 32'h00FFFFFF;*/
 			
 			
 		   /*if (avl_address[0] == 0 && avl_address[1] == 0)
@@ -148,16 +145,10 @@ begin
 			else
 				avl_writedata <= 32'h000FFFFF;*/
 				
-			//avl_writedata <= avl_address;
-			
-			//if (write_count[3])
-	  		//begin
-	  		//	write_count <= 5'b0;
-			   avl_write <= 1'b1;
-				c_state <= 2;
-			//end
-			//else
-			//  	write_count <= write_count + 1'b1;
+			avl_writedata <= avl_address;
+	
+		   avl_write <= 1'b1;
+			c_state <= 2;
 	  	end
 	  	2 : begin //finish write one data
 	  		if (avl_waitrequest_n)

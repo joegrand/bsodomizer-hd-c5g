@@ -19,17 +19,13 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-`define RXBASE    8'h98
-
 
 module hdmi_rx_ctrl(
 	input wire clk,
 	input wire reset,
 	
 	inout wire scl,
-	inout wire sda,
-
-	input wire intrx
+	inout wire sda
 );
 
 reg ready = 0;
@@ -91,7 +87,7 @@ i2c_master_byte_ctrl i2c_controller (
 	.nReset(1'b1),
 	
 	.ena(1'b1),
-	.clk_cnt(5'h18),   // clock speed
+	.clk_cnt(5'h18),
 	
 	.start(i2c_start),
 	.stop(i2c_stop),
@@ -118,12 +114,12 @@ i2c_master_byte_ctrl i2c_controller (
 	.sda_oen(sda_padoen_oe)
 );
 
-localparam 	I2C_NOP = 0,
-				I2C_START = 1,
-				I2C_WRITE = 2,
-				I2C_WRITE_LAST = 3,
-				I2C_READ = 4,
-				I2C_READ_LAST = 5;
+localparam I2C_NOP = 0,
+I2C_START = 1,
+I2C_WRITE = 2,
+I2C_WRITE_LAST = 3,
+I2C_READ = 4,
+I2C_READ_LAST = 5;
 
 reg [2:0] i2c_command = 0;
 
@@ -167,15 +163,10 @@ hdmi_rx_setup setupmem (
 );
 
 localparam IDLE = 0,
-RXINT = 1,
-RXHPDINT = 2,
-RXENABLE = 3,
-RXDISABLE = 4;
+STARTUP = 1;
 
 reg [2:0] ctrlstate = IDLE;
 reg [3:0] ctrlstep = 0;
-
-reg rxpowered = 1'b0;
 
 reg [1:0] startupstep = 0;
 
@@ -184,7 +175,7 @@ always @(posedge clk) begin
 		i2c_command <= #1 3'h0;
 		ctrlstate <= #1 IDLE;
 		ctrlstep <= #1 0;
-		rxpowered <= #1 2'h0;
+		setupaddr <= #1 0;
 		startupstep <= #1 0;
 	end
 	else begin
@@ -192,173 +183,40 @@ always @(posedge clk) begin
 			case (ctrlstate)
 			
 				IDLE: begin
-					case (startupstep)
-						0: begin
-							ctrlstate <= #1 RXINT;
-							startupstep <= #1 startupstep + 1;
-						end
-						1: begin
-							if (!intrx) begin
-								ctrlstate <= #1 RXINT;
-							end
-						end
-					endcase
 				end
-			
-				RXINT: begin
+
+				STARTUP: begin
 						case (ctrlstep)
 							0: begin
-								i2c_dout <= #1 `RXBASE;
-								i2c_command <= #1 I2C_START;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 1;
-								end
-							end
-							1: begin
-								i2c_dout <= #1 8'h96;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_START;
-									ctrlstep <= #1 2;
-								end
-							end
-							2: begin
-								i2c_dout <= #1 (`RXBASE | 1'b1);
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_READ_LAST;
-									ctrlstep <= #1 3;
-								end
-							end
-							3: begin
-								if (i2c_done) begin
-									last_i2c_in <= #1 i2c_din;
-									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 4;
-								end
-							end
-							4: begin
-								i2c_dout <= #1 `RXBASE;
-								i2c_command <= #1 I2C_START;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 5;
-								end
-							end
-							5: begin
-								i2c_dout <= #1 8'h96;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE_LAST;
-									ctrlstep <= #1 6;
-								end
-							end
-							6: begin
-								i2c_dout <= #1 last_i2c_in;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 0;
-									if ((last_i2c_in & 'b10000000))
-										ctrlstate <= #1 RXHPDINT;
-									else
-										ctrlstate <= #1 IDLE;
-								end
-							end
-						endcase
-				end
-				
-				RXHPDINT: begin
-						case (ctrlstep)
-							0: begin
-								i2c_dout <= #1 `RXBASE;
-								i2c_command <= #1 I2C_START;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 1;
-								end
-							end
-							1: begin
-								i2c_dout <= #1 8'h42;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_START;
-									ctrlstep <= #1 2;
-								end
-							end
-							2: begin
-								i2c_dout <= #1 (`RXBASE | 1'b1);
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_READ_LAST;
-									ctrlstep <= #1 3;
-								end
-							end
-							3: begin
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 0;
-									if ((i2c_din & 'b01000000) && !rxpowered)
-										ctrlstate <= #1 RXENABLE;
-									else
-										if (!(i2c_din & 'b01000000) && rxpowered)
-											ctrlstate <= #1 RXDISABLE;
-										else
-											ctrlstate <= #1 IDLE;
-								end
-							end
-						endcase
-				end
-				
-				RXENABLE: begin
-						case (ctrlstep)
-							0: begin
-								i2c_dout <= #1 `RXBASE;
-								i2c_command <= #1 I2C_START;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 1;
-								end
-							end
-							1: begin
-								i2c_dout <= #1 8'h41;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE_LAST;
-									ctrlstep <= #1 2;
-								end
-							end
-							2: begin
-								i2c_dout <= #1 'b00010000;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 3;
-								end
-							end
-							3: begin
 								setupaddr <= #1 0;
-								ctrlstep <= #1 4;
+								ctrlstep <= #1 1;
 							end
-							4: begin
+							1: begin
 								i2c_dout <= #1 i2c_address;
 								i2c_command <= #1 I2C_START;
 								if (i2c_done) begin
 									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 5;
+									ctrlstep <= #1 2;
 								end
 							end
-							5: begin
+							2: begin
 								i2c_dout <= #1 i2c_register;
 								if (i2c_done) begin
 									i2c_command <= #1 I2C_WRITE_LAST;
-									ctrlstep <= #1 6;
+									ctrlstep <= #1 3;
 								end
 							end
-							6: begin
+							3: begin
 								i2c_dout <= #1 i2c_value;
 								if (i2c_done) begin
 									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 7;
+									ctrlstep <= #1 4;
 								end
 							end
-							7: begin
+							4: begin
 								if (setupaddr < setupsize) begin
 									setupaddr <= #1 setupaddr + 1;
-									ctrlstep <= #1 4;
+									ctrlstep <= #1 1;
 								end
 								else begin
 									ctrlstate <= #1 IDLE;
@@ -367,39 +225,6 @@ always @(posedge clk) begin
 							end
 						endcase
 				end
-				
-				RXDISABLE: begin
-						case (ctrlstep)
-							0: begin
-								rxpowered <= #1 0;
-								i2c_dout <= #1 `RXBASE;
-								i2c_command <= #1 I2C_START;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE;
-									ctrlstep <= #1 1;
-								end
-							end
-							1: begin
-								i2c_dout <= #1 8'h41;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_WRITE_LAST;
-									ctrlstep <= #1 2;
-								end
-							end
-							2: begin
-								i2c_dout <= #1 'b01010010;
-								if (i2c_done) begin
-									i2c_command <= #1 I2C_NOP;
-									ctrlstep <= #1 3;
-								end
-							end
-							3: begin
-								ctrlstate <= #1 IDLE;
-								ctrlstep <= #1 0;
-							end
-						endcase
-				end
-				
 			endcase
 	end
 end

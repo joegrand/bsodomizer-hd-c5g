@@ -5,8 +5,6 @@
 // ---------
 // Top level wrapper for BSODomizer HD using the Cyclone V GX Starter Kit.
 //
-// Authors: Joe Grand [www.grandideastudio.com] and Zoz
-//
 
 // Define a delay of ''#1'' as 1 ns. Discretize the simulation in units of 1 ps. 
 `timescale 1ns / 1ps
@@ -154,7 +152,7 @@ assign fpga_lpddr2_avl_0_size = 3'b001;
 
 // PLL for 148.5MHz PCLK generation
 ALTCLKCTRL altclk (
-	.inclk(CLOCK_50_B8A),
+	.inclk(CLOCK_50_B5B),
 	.outclk(altclk_out)
 	);
 	
@@ -201,10 +199,8 @@ hdmi_rx_ctrl hdmi_rx (
 	.clk(CLOCK_50_B5B),
 	.reset(!CPU_RESET_n), 
 	.scl(HDMI_RX_I2C_SCL),
-	.sda(HDMI_RX_I2C_SDA),
-	.intrx(HDMI_RX_INT)
+	.sda(HDMI_RX_I2C_SDA)
 );
- 	
 	
 fpga_lpddr2 fpga_lpddr2_inst(
 /*input  wire       */   .pll_ref_clk(CLOCK_50_B5B),           	//	pll_ref_clk.clk
@@ -249,16 +245,16 @@ fpga_lpddr2 fpga_lpddr2_inst(
 
 /*input  wire       */   .mp_cmd_clk_0_clk(afi_half_clk),           			  // mp_cmd_clk_0.clk
 /*input  wire       */   .mp_cmd_reset_n_0_reset_n(test_software_reset_n),   // mp_cmd_reset_n_0.reset_n
-/*input  wire       */   .mp_cmd_clk_1_clk(hdmi_tx_clk_148_5),           		  // mp_cmd_clk_1.clk
+/*input  wire       */   .mp_cmd_clk_1_clk(hdmi_tx_clk_148_5),           	  // mp_cmd_clk_1.clk
 /*input  wire       */   .mp_cmd_reset_n_1_reset_n(CPU_RESET_n),   			  // mp_cmd_reset_n_1.reset_n		
 
 /*input  wire       */   .mp_rfifo_clk_0_clk(afi_half_clk),         			  // mp_rfifo_clk_0.clk
 /*input  wire       */   .mp_rfifo_reset_n_0_reset_n(test_software_reset_n), // mp_rfifo_reset_n_0.reset_n
 /*input  wire       */   .mp_wfifo_clk_0_clk(afi_half_clk),         			  // mp_wfifo_clk_0.clk
 /*input  wire       */   .mp_wfifo_reset_n_0_reset_n(test_software_reset_n), // mp_wfifo_reset_n_0.reset_n
-/*input  wire       */   .mp_rfifo_clk_1_clk(hdmi_tx_clk_148_5),         		  // mp_rfifo_clk_1.clk
+/*input  wire       */   .mp_rfifo_clk_1_clk(hdmi_tx_clk_148_5),         	  // mp_rfifo_clk_1.clk
 /*input  wire       */   .mp_rfifo_reset_n_1_reset_n(CPU_RESET_n), 			  // mp_rfifo_reset_n_1.reset_n
-/*input  wire       */   .mp_wfifo_clk_1_clk(hdmi_tx_clk_148_5),         		  // mp_wfifo_clk_1.clk
+/*input  wire       */   .mp_wfifo_clk_1_clk(hdmi_tx_clk_148_5),         	  // mp_wfifo_clk_1.clk
 /*input  wire       */   .mp_wfifo_reset_n_1_reset_n(CPU_RESET_n), 		     // mp_wfifo_reset_n_1.reset_n	
 
 /*output wire       */   .local_init_done(fpga_lpddr2_local_init_done),      	// status.local_init_done
@@ -281,7 +277,14 @@ Avalon_bus_RW_Test fpga_lpddr2_Verify(
 	.avl_write(fpga_lpddr2_avl_0_write_req),    
 	.avl_burstbegin(fpga_lpddr2_avl_0_burstbegin),
 		
-	.drv_status_test_complete(fpga_lpddr2_test_complete)	
+	.drv_status_test_complete(fpga_lpddr2_test_complete),
+	
+	.resetb(CPU_RESET_n & RXnTX),		// Start if RX mode selected	
+	.adv7611_hs(HDMI_RX_HS),     		// HS (HSync) 
+	.adv7611_vs(HDMI_RX_VS),       	// VS (VSync)
+	.adv7611_clk(HDMI_RX_CLK),		   // LLC (Line-locked output clock)
+	.adv7611_d(HDMI_RX_D),			   // Data lines
+	.adv7611_de(HDMI_RX_DE)  			// Data enable
 );
 
 
@@ -292,7 +295,7 @@ Avalon_bus_RW_Test fpga_lpddr2_Verify(
 //always @ blocks go here
 //	always @(sensitivity list)
 //		commmands-to-run-when-triggered;
-always @ (posedge CLOCK_50_B5B) 
+always @ (posedge CLOCK_50_B6A) 
 begin
 	if (CPU_RESET_n)
 		counter <= counter + 1;

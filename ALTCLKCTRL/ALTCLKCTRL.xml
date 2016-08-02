@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<deploy date="2016.07.22.00:19:28" outputDirectory="Z:/C5G_BSOD/altclkctrl/">
+<deploy date="2016.07.31.13:54:44" outputDirectory="Z:/C5G_BSOD/ALTCLKCTRL/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -44,22 +44,22 @@
  </perimeter>
  <entity
    path=""
-   parameterizationKey="ALTCLKCTRL:1.0:AUTO_DEVICE=5CGXFC5C6F27C7,AUTO_DEVICE_FAMILY=Cyclone V,AUTO_DEVICE_SPEEDGRADE=7_H6,AUTO_GENERATION_ID=1469171968,AUTO_UNIQUE_ID=(altclkctrl:15.1:CLOCK_TYPE=2,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=1,GUI_USE_ENA=false,NUMBER_OF_CLOCKS=1,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=false)"
+   parameterizationKey="ALTCLKCTRL:1.0:AUTO_DEVICE=5CGXFC5C6F27C7,AUTO_DEVICE_FAMILY=Cyclone V,AUTO_DEVICE_SPEEDGRADE=7_H6,AUTO_GENERATION_ID=1469998484,AUTO_UNIQUE_ID=(altclkctrl:16.0:CLOCK_TYPE=2,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=1,GUI_USE_ENA=false,NUMBER_OF_CLOCKS=1,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=false)"
    instancePathKey="ALTCLKCTRL"
    kind="ALTCLKCTRL"
    version="1.0"
    name="ALTCLKCTRL">
-  <parameter name="AUTO_GENERATION_ID" value="1469171968" />
+  <parameter name="AUTO_GENERATION_ID" value="1469998484" />
   <parameter name="AUTO_DEVICE" value="5CGXFC5C6F27C7" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
   <parameter name="AUTO_UNIQUE_ID" value="" />
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="7_H6" />
   <generatedFiles>
-   <file path="Z:/C5G_BSOD/altclkctrl/synthesis/ALTCLKCTRL.v" type="VERILOG" />
+   <file path="Z:/C5G_BSOD/ALTCLKCTRL/synthesis/ALTCLKCTRL.v" type="VERILOG" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="Z:/C5G_BSOD/altclkctrl/synthesis/submodules/ALTCLKCTRL_altclkctrl_0.v"
+       path="Z:/C5G_BSOD/ALTCLKCTRL/synthesis/submodules/ALTCLKCTRL_altclkctrl_0.v"
        type="VERILOG"
        attributes="" />
   </childGeneratedFiles>
@@ -68,7 +68,7 @@
   </sourceFiles>
   <childSourceFiles>
    <file
-       path="C:/altera_lite/15.1/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
+       path="C:/altera_lite/16.0/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
   </childSourceFiles>
   <messages>
    <message level="Debug" culprit="ALTCLKCTRL">queue size: 0 starting:ALTCLKCTRL "ALTCLKCTRL"</message>
@@ -87,16 +87,16 @@
    <message level="Debug" culprit="ALTCLKCTRL"><![CDATA["<b>ALTCLKCTRL</b>" reuses <b>altclkctrl</b> "<b>submodules/ALTCLKCTRL_altclkctrl_0</b>"]]></message>
    <message level="Debug" culprit="ALTCLKCTRL">queue size: 0 starting:altclkctrl "submodules/ALTCLKCTRL_altclkctrl_0"</message>
    <message level="Info" culprit="altclkctrl_0">Generating top-level entity ALTCLKCTRL_altclkctrl_0.</message>
-   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: C:/altera_lite/15.1/quartus/bin64/.</message>
+   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: C:/altera_lite/16.0/quartus/bin64/.</message>
    <message level="Info" culprit="altclkctrl_0"><![CDATA["<b>ALTCLKCTRL</b>" instantiated <b>altclkctrl</b> "<b>altclkctrl_0</b>"]]></message>
   </messages>
  </entity>
  <entity
    path="submodules/"
-   parameterizationKey="altclkctrl:15.1:CLOCK_TYPE=2,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=1,GUI_USE_ENA=false,NUMBER_OF_CLOCKS=1,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=false"
+   parameterizationKey="altclkctrl:16.0:CLOCK_TYPE=2,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=1,GUI_USE_ENA=false,NUMBER_OF_CLOCKS=1,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=false"
    instancePathKey="ALTCLKCTRL:.:altclkctrl_0"
    kind="altclkctrl"
-   version="15.1"
+   version="16.0"
    name="ALTCLKCTRL_altclkctrl_0">
   <parameter name="NUMBER_OF_CLOCKS" value="1" />
   <parameter name="USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION" value="false" />
@@ -106,21 +106,21 @@
   <parameter name="CLOCK_TYPE" value="2" />
   <generatedFiles>
    <file
-       path="Z:/C5G_BSOD/altclkctrl/synthesis/submodules/ALTCLKCTRL_altclkctrl_0.v"
+       path="Z:/C5G_BSOD/ALTCLKCTRL/synthesis/submodules/ALTCLKCTRL_altclkctrl_0.v"
        type="VERILOG"
        attributes="" />
   </generatedFiles>
   <childGeneratedFiles/>
   <sourceFiles>
    <file
-       path="C:/altera_lite/15.1/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
+       path="C:/altera_lite/16.0/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
   </sourceFiles>
   <childSourceFiles/>
   <instantiator instantiator="ALTCLKCTRL" as="altclkctrl_0" />
   <messages>
    <message level="Debug" culprit="ALTCLKCTRL">queue size: 0 starting:altclkctrl "submodules/ALTCLKCTRL_altclkctrl_0"</message>
    <message level="Info" culprit="altclkctrl_0">Generating top-level entity ALTCLKCTRL_altclkctrl_0.</message>
-   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: C:/altera_lite/15.1/quartus/bin64/.</message>
+   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: C:/altera_lite/16.0/quartus/bin64/.</message>
    <message level="Info" culprit="altclkctrl_0"><![CDATA["<b>ALTCLKCTRL</b>" instantiated <b>altclkctrl</b> "<b>altclkctrl_0</b>"]]></message>
   </messages>
  </entity>

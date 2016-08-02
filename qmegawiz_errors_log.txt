@@ -1,0 +1,16 @@
+
+
+Z:/C5G_BSOD/fpga_lpddr2.v
+
+Jul 30 11PM:06:45>: Megafunction LPDDR2 SDRAM Controller with UniPHY v16.0 is not listed in any 
+wizard.lst file in the specified library path(s).Wizard launch aborted
+
+Z:/C5G_BSOD/fpga_lpddr2.v
+
+Jul 30 11PM:06:53>: Megafunction LPDDR2 SDRAM Controller with UniPHY v16.0 is not listed in any 
+wizard.lst file in the specified library path(s).Wizard launch aborted
+
+Z:/C5G_BSOD/fpga_lpddr2.v
+
+Jul 30 11PM:07:33>: Megafunction LPDDR2 SDRAM Controller with UniPHY v16.0 is not listed in any 
+wizard.lst file in the specified library path(s).Wizard launch aborted

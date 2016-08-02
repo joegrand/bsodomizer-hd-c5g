@@ -1,0 +1,23 @@
+diff a/videogen/pattern_vg.v b/videogen/pattern_vg.v	(rejected hunks)
+@@ -90,6 +90,12 @@ wire [10:0] fifo_used;
+ //assign avl_burstbegin = avl_read;
+ //assign avl_address = x + (y * 'd1920); // address needs to be synchronized to the current pixel location
+ 
++wire rdreq;
++wire wrreq;
++
++assign rdreq = dn_in & !reset;
++assign wrreq = avl_readdatavalid & (read_state == 4'h3) & !reset;
++
+ 
+ //=======================================================
+ //  Core instantiations
+@@ -311,7 +317,7 @@ always @ (posedge clk_in or posedge reset) begin
+ 		 4'h0: begin //Frame sync, FIFO, and AVL reset
+ 			avl_address <= 27'h0;
+ 			fifo_clr <= 1'b1;
+-			burst_count <= 4'h0;
++			burst_count <= 16'h0;
+ 			
+ 			// check for beginning of frame
+ 			if(vsync == 2'b01 && hsync == 2'b01) begin

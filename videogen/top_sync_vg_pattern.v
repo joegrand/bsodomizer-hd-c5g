@@ -38,7 +38,7 @@ parameter H_BP        = 12'd148;
 parameter H_SYNC      = 12'd44; 
 parameter HV_OFFSET_0 = 12'd0; 
 parameter HV_OFFSET_1 = 12'd0; 
-parameter PATTERN_RAMP_STEP = 20'h0888; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222 for full screen width
+parameter PATTERN_RAMP_STEP = 20'h1110; // 20'hFFFFF / 1920 act_pixels per line = 20'h0222 for full screen width
  
 wire reset; 
 
@@ -109,7 +109,7 @@ wire de, vs, hs, field, vs_out, hs_out, de_out;
 	  .b_out(b_out), 
 	  .total_active_pix(H_TOTAL  - (H_FP + H_BP + H_SYNC)), // (1920) // h_total - (h_fp+h_bp+h_sync) 
 	  .total_active_lines(INTERLACED ? (V_TOTAL_0 - (V_FP_0 + V_BP_0 + V_SYNC_0)) + (V_TOTAL_1 - (V_FP_1 + V_BP_1 + 
-	V_SYNC_1)) : (V_TOTAL_0 -  (V_FP_0 + V_BP_0 + V_SYNC_0))),  // originally: 13'd480 
+	V_SYNC_1)) : (V_TOTAL_0 - (V_FP_0 + V_BP_0 + V_SYNC_0))),  // originally: 13'd480 
 	  .ramp_step(PATTERN_RAMP_STEP),
 	  .dip_sw(dip_sw),
 	  
