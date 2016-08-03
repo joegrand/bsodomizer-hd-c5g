@@ -1,16 +1,16 @@
-Fitter Status : Successful - Tue Aug 02 08:37:37 2016
+Fitter Status : Successful - Tue Aug 02 23:39:32 2016
 Quartus Prime Version : 16.0.1 Build 218 06/01/2016 SJ Lite Edition
 Revision Name : C5G_BSOD
 Top-level Entity Name : C5G_BSOD
 Family : Cyclone V
 Device : 5CGXFC5C6F27C7
 Timing Models : Final
-Logic utilization (in ALMs) : 2,842 / 29,080 ( 10 % )
-Total registers : 4503
+Logic utilization (in ALMs) : 2,739 / 29,080 ( 9 % )
+Total registers : 4408
 Total pins : 170 / 364 ( 47 % )
 Total virtual pins : 0
-Total block memory bits : 3,442,688 / 4,567,040 ( 75 % )
-Total RAM Blocks : 423 / 446 ( 95 % )
+Total block memory bits : 571,392 / 4,567,040 ( 13 % )
+Total RAM Blocks : 73 / 446 ( 16 % )
 Total DSP Blocks : 0 / 150 ( 0 % )
 Total HSSI RX PCSs : 0 / 6 ( 0 % )
 Total HSSI PMA RX Deserializers : 0 / 6 ( 0 % )

@@ -90,6 +90,7 @@ reg state;
 
 wire altclk_out;
 wire hdmi_tx_clk_148_5;
+wire hdmi_tx_clk_297; // 2x PCLK for use w/ LPDDR2 port 1 clock
 wire hdmi_tx_pll_locked;
 
 // LPDDR2
@@ -160,6 +161,7 @@ hdmi_tx_pll pll (
 	.refclk(altclk_out),
 	.rst(!CPU_RESET_n),
 	.outclk_0(hdmi_tx_clk_148_5), // PCLK
+	.outclk_1(hdmi_tx_clk_297),   // 2xPCLK
 	.locked(hdmi_tx_pll_locked)
 );
 
@@ -183,7 +185,7 @@ top_sync_vg_pattern vg (
 	.adv7513_de(HDMI_TX_DE),  			// Data enable
 	.dip_sw(SW),							// DIP switches for pattern selection
 		
-	.avl_clk(hdmi_tx_clk_148_5),			// LPDDR2 (read only) //XXX: Not needed
+	.avl_clk(hdmi_tx_clk_297),			// LPDDR2 (read only)
 	.local_init_done(fpga_lpddr2_local_init_done), 
 	.avl_waitrequest_n(fpga_lpddr2_avl_1_ready),                 
 	.avl_address(fpga_lpddr2_avl_1_addr),                      
@@ -245,16 +247,16 @@ fpga_lpddr2 fpga_lpddr2_inst(
 
 /*input  wire       */   .mp_cmd_clk_0_clk(afi_half_clk),           			  // mp_cmd_clk_0.clk
 /*input  wire       */   .mp_cmd_reset_n_0_reset_n(test_software_reset_n),   // mp_cmd_reset_n_0.reset_n
-/*input  wire       */   .mp_cmd_clk_1_clk(hdmi_tx_clk_148_5),           	  // mp_cmd_clk_1.clk
+/*input  wire       */   .mp_cmd_clk_1_clk(hdmi_tx_clk_297),           	  	  // mp_cmd_clk_1.clk
 /*input  wire       */   .mp_cmd_reset_n_1_reset_n(CPU_RESET_n),   			  // mp_cmd_reset_n_1.reset_n		
 
 /*input  wire       */   .mp_rfifo_clk_0_clk(afi_half_clk),         			  // mp_rfifo_clk_0.clk
 /*input  wire       */   .mp_rfifo_reset_n_0_reset_n(test_software_reset_n), // mp_rfifo_reset_n_0.reset_n
 /*input  wire       */   .mp_wfifo_clk_0_clk(afi_half_clk),         			  // mp_wfifo_clk_0.clk
 /*input  wire       */   .mp_wfifo_reset_n_0_reset_n(test_software_reset_n), // mp_wfifo_reset_n_0.reset_n
-/*input  wire       */   .mp_rfifo_clk_1_clk(hdmi_tx_clk_148_5),         	  // mp_rfifo_clk_1.clk
+/*input  wire       */   .mp_rfifo_clk_1_clk(hdmi_tx_clk_297),         	     // mp_rfifo_clk_1.clk
 /*input  wire       */   .mp_rfifo_reset_n_1_reset_n(CPU_RESET_n), 			  // mp_rfifo_reset_n_1.reset_n
-/*input  wire       */   .mp_wfifo_clk_1_clk(hdmi_tx_clk_148_5),         	  // mp_wfifo_clk_1.clk
+/*input  wire       */   .mp_wfifo_clk_1_clk(hdmi_tx_clk_297),         	     // mp_wfifo_clk_1.clk
 /*input  wire       */   .mp_wfifo_reset_n_1_reset_n(CPU_RESET_n), 		     // mp_wfifo_reset_n_1.reset_n	
 
 /*output wire       */   .local_init_done(fpga_lpddr2_local_init_done),      	// status.local_init_done

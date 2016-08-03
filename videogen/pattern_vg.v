@@ -158,14 +158,7 @@ always @ (posedge clk_in or posedge reset) begin
 	 ramp_values <= 0;
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
-	 vsync <= 2'b00;
-	 hsync <= 2'b00;
-	 read_state <= 4'h0;
-	 avl_burstcount <= 8'd128;  //128 is the max, even though count is 8bit
-	 dat_count <= 7'h0;
-	 burst_count <= 16'h0;
   end else begin
-	 avl_burstcount <= avl_burstcount;  // Prevent inferring of latch
     vn_out <= vn_in; 
     hn_out <= hn_in; 
     den_out <= dn_in;
@@ -298,61 +291,8 @@ always @ (posedge clk_in or posedge reset) begin
 			end
 		end
 	 end*/		 
-    3'b111 : begin	// image (1920 x 1080, 8bpp)
-		 vsync <= {vsync[0], vn_in};
-		 hsync <= {hsync[0], hn_in};
-		 
-		 case(read_state)
-		 4'h0: begin //Frame sync, FIFO, and AVL reset
-			avl_address <= 27'h0;
-			fifo_clr <= 1'b1;
-			burst_count <= 16'h0;
-			  
-			// check for beginning of frame
-			if((vsync == 2'b01) && (hsync == 2'b01)) begin
-				read_state <= 4'h1;
-				fifo_clr <= 1'b0;
-			end
-		 end
-		 /* I _THINK_ the LPDDR2 IP can take up to 8 burst requests, but the
-		  * docs on it are terrible and don't really explain it well.
-		  * Nor does it really cleanly explain how to tell if its done sending
-		  * data. So, lets do one at a time, since we have enough margin.
-		  */
-		 4'h1: begin //Start burst read
-		   // avl_burstcount is always set to 128
-			// 15x 128 word bursts per line (32 bits per word, of which 24 bits are used for RGB)
-			if(!fifo_used[10]) begin  //If the FIFO is half full, wait
-				avl_read <= 1'b1;
-				avl_burstbegin <= 1'b1;
-				read_state <= 4'h2;
-				burst_count <= burst_count + 1'b1;
-			end
-		 end
-		 4'h2: begin // Wait for wait request from slave
-			avl_burstbegin <= 1'b0;
-			avl_read <= 1'b0;
-			if(avl_waitrequest_n) // If read is done, go to the next state
-			  read_state <= 4'h3;
-		 end
-		 4'h3: begin //Latch in data to the FIFO
-			if(avl_readdatavalid) begin // If data is valid
-				fifo_data <= avl_readdata;
-				dat_count <= dat_count + 1'b1;
-			   if(dat_count == 7'd127) begin //On THIS clock, we just got the 128th word
-				  avl_address <= avl_address + 'd128;
-				  // If this is the 16200th burst, its the last for this frame
-				  if(burst_count > 16'd16199) 
-					read_state <= 4'h0; // go back to idle until the next frame
-				  else 
-				   read_state <= 4'h1; // continue with this frame
-			   end
-			end
-		 end
-		 default: read_state <= 4'h0;
-		 endcase
-			
-		 /* dn_in is DE, this is high when actual frame data is needed */
+    3'b111 : begin	// image (1920 x 1080, 8bpp)		
+		 // dn_in is DE, this is high when actual frame data is needed
 		 if (dn_in) begin
 			r_out <= fifo_q[23:16]; // get data from fifo and push to HDMI
 			g_out <= fifo_q[15:8];
@@ -367,69 +307,71 @@ end
  
 ////////////	LPDDR2 	////////////
 
-/*reg [X_BITS-1:0] x_q;
-reg [Y_BITS-1:0] y_q;
 always @ (posedge avl_clk or posedge reset)
 begin	 
-   if(reset) begin 
-	  	read_state <= 4'h0;
-		avl_read <= 1'b0;
+  if(reset) begin 
+	 vsync <= 2'b00;
+	 hsync <= 2'b00;
+	 read_state <= 4'h0;
+	 avl_burstcount <= 8'd128;  //128 is the max, even though count is 8bit
+	 dat_count <= 7'h0;
+	 burst_count <= 16'h0;
+  end else begin
+  	 avl_burstcount <= avl_burstcount;  // Prevent inferring of latch
+	 vsync <= {vsync[0], vn_in};
+	 hsync <= {hsync[0], hn_in};
+	 
+	 case(read_state)
+	 4'h0: begin //Frame sync, FIFO, and AVL reset
 		avl_address <= 27'h0;
-		fifo_wrreq <= 1'b0;
 		fifo_clr <= 1'b1;
-		vsync <= 2'b00;
-		hsync <= 2'b00;
-		x_q <= 'h0;
-		y_q <= 'h0;
-   end else begin
-		// Since these are coming from another domain, reregister them
-		// XXX: I'm not sure if these are good enough, need to verify
-		vsync <= {vsync[0], vn_in};
-		hsync <= {hsync[0], hn_in};
-		x_q <= x;
-		y_q <= y;
-
-		case (read_state)
-		0 : begin // idle
-			avl_address <= 27'h0; 
-			fifo_clr <= 1'b1;
-			
-			// check for beginning of frame
-			if(vsync == 2'b01 && hsync == 2'b01) begin
-				read_state <= 4'h1;
-				fifo_clr <= 1'b0;
-			end
-				
+		burst_count <= 16'h0;
+		  
+		// check for beginning of frame
+		if((vsync == 2'b01) && (hsync == 2'b01)) begin
+			read_state <= 4'h1;
+			fifo_clr <= 1'b0;
 		end
-		1 : begin
-			// XXX: I don't think the check of locla_init_done is needed
-			if (local_init_done) begin
-				avl_read <= 1'b1; // assert LPDDR2 read request
-				
-				if (avl_waitrequest_n) begin  // if read is done, go to the next state
-				  read_state <= 4'h2;		 
-				  fifo_wrreq <= 1'b1; // assert fifo write request
-				  avl_address <= (x_q + (y_q *'d1920));
-				end
-			end
+	 end
+	 /* I _THINK_ the LPDDR2 IP can take up to 8 burst requests, but the
+	  * docs on it are terrible and don't really explain it well.
+	  * Nor does it really cleanly explain how to tell if its done sending
+	  * data. So, lets do one at a time, since we have enough margin.
+	  */
+	 4'h1: begin //Start burst read
+		// avl_burstcount is always set to 128
+		// 15x 128 word bursts per line (32 bits per word, of which 24 bits are used for RGB)
+		if(!fifo_used[10]) begin  //If the FIFO is half full, wait
+			avl_read <= 1'b1;
+			avl_burstbegin <= 1'b1;
+			read_state <= 4'h2;
+			burst_count <= burst_count + 1'b1;
 		end
-		2 : begin
-			if(avl_readdatavalid) begin // latch read data
-				fifo_data <= avl_readdata;	// push received data from LPDDR2 into fifo
-				fifo_wrreq <= 1'b0;
-				avl_read <= 1'b0;
-
-				if (avl_address < ('d1920 * 'd1080) - 1) begin
-				  read_state <= 4'h1;
-				end else begin
-				  read_state <= 4'h0; // we're done with the frame, so go back to idle until the next one		  
-				end
+	 end
+	 4'h2: begin // Wait for wait request from slave
+		avl_burstbegin <= 1'b0;
+		avl_read <= 1'b0;
+		if(avl_waitrequest_n) // If read is done, go to the next state
+		  read_state <= 4'h3;
+	 end
+	 4'h3: begin //Latch in data to the FIFO
+		if(avl_readdatavalid) begin // If data is valid
+			fifo_data <= avl_readdata;
+			dat_count <= dat_count + 1'b1;
+			if(dat_count == 7'd127) begin //On THIS clock, we just got the 128th word
+			  avl_address <= avl_address + 'd128;
+			  // If this is the 16200th burst, its the last for this frame
+			  if(burst_count > 16'd16199) 
+				read_state <= 4'h0; // go back to idle until the next frame
+			  else 
+				read_state <= 4'h1; // continue with this frame
 			end
 		end
-		default : read_state <= 4'h0;
-		endcase
-	end
-end*/
+	 end
+	 default: read_state <= 4'h0;
+	 endcase	
+  end 
+end
 
 		
 ////////////	SRAM Address Generator	  ////////////
