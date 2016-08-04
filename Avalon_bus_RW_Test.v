@@ -116,36 +116,36 @@ begin
 	  			c_state <= 1;
 	  	end
 	  	1 : begin //write
-			/*if (avl_address < ('d1920 * 'd1080) / 2)  // sdc set multi-cycle 3
-				avl_writedata <= 32'h0055AA55;
+			// horizontal bars, split screen
+			/*if (avl_address < ('d1920 * 'd1080) / 2) 
+				avl_writedata <= 32'h0055AA55; // top 
 			else
-				avl_writedata <= 32'h00BB6666;*/
+				avl_writedata <= 32'h00BB6666; // bottom*/
 			
-			/*if (avl_address <= 27'h7E900)  // sdc set multi-cycle 3
-				avl_writedata <= 32'h00FF0000;
+			// horizontal bars (4)
+			if (avl_address <= 27'h7E900)  
+				avl_writedata <= 32'h00FF0000; // quarter 1
 			else if (avl_address >= 27'h7E901 && avl_address <= 27'hFD200)
-				avl_writedata <= 32'h0000FF00;
+				avl_writedata <= 32'h0000FF00; // quarter 2
 			else if (avl_address >= 27'hDF201 && avl_address <= 27'h17BB00)
-				avl_writedata <= 32'h000000FF;
+				avl_writedata <= 32'h000000FF; // quarter 3
 			else
-				avl_writedata <= 32'h00FFFFFF;*/
+				avl_writedata <= 32'h00FFFFFF; // quarter 4
 			
-			
-		   /*if (avl_address[0] == 0 && avl_address[1] == 0)
-				avl_writedata <= 32'h00FFFFFF;
-			else if (avl_address[0] == 1 && avl_address[1] == 0)
-				avl_writedata <= 32'h00FF0000;
-			else if (avl_address[0] == 0 && avl_address[1] == 1)
-				avl_writedata <= 32'h0000FF00;
-         else
-				avl_writedata <= 32'h000000FF;*/
+			 // vertical bars, split screen
+			 /*if ((avl_address % 1920) < 960)
+			   avl_writedata <= 32'h0055AA55; // left
+			 else
+				avl_writedata <= 32'h00BB6666; // right*/
 		
+		   // alternating pixels
 		   /*if (avl_address[0] == 1'b0)
 				avl_writedata <= 32'h00FF0000;
 			else
 				avl_writedata <= 32'h000FFFFF;*/
 				
-			avl_writedata <= avl_address;
+			// pixel color = memory address
+			//avl_writedata <= avl_address;
 	
 		   avl_write <= 1'b1;
 			c_state <= 2;

@@ -1,12 +1,12 @@
 // megafunction wizard: %FIFO%VBB%
 // GENERATION: STANDARD
 // VERSION: WM1.0
-// MODULE: scfifo 
+// MODULE: dcfifo 
 
 // ============================================================
 // File Name: fifo.v
 // Megafunction Name(s):
-// 			scfifo
+// 			dcfifo
 //
 // Simulation Library Files(s):
 // 			altera_mf
@@ -33,25 +33,34 @@
 //agreement for further details.
 
 module fifo (
-	clock,
+	aclr,
 	data,
+	rdclk,
 	rdreq,
-	sclr,
+	wrclk,
 	wrreq,
-	empty,
-	full,
 	q,
-	usedw);
+	rdempty,
+	wrfull,
+	wrusedw);
 
-	input	  clock;
+	input	  aclr;
 	input	[31:0]  data;
+	input	  rdclk;
 	input	  rdreq;
-	input	  sclr;
+	input	  wrclk;
 	input	  wrreq;
-	output	  empty;
-	output	  full;
 	output	[31:0]  q;
-	output	[10:0]  usedw;
+	output	  rdempty;
+	output	  wrfull;
+	output	[11:0]  wrusedw;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_off
+`endif
+	tri0	  aclr;
+`ifndef ALTERA_RESERVED_QIS
+// synopsys translate_on
+`endif
 
 endmodule
 
@@ -62,9 +71,9 @@ endmodule
 // Retrieval info: PRIVATE: AlmostEmptyThr NUMERIC "-1"
 // Retrieval info: PRIVATE: AlmostFull NUMERIC "0"
 // Retrieval info: PRIVATE: AlmostFullThr NUMERIC "-1"
-// Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "1"
-// Retrieval info: PRIVATE: Clock NUMERIC "0"
-// Retrieval info: PRIVATE: Depth NUMERIC "2048"
+// Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "0"
+// Retrieval info: PRIVATE: Clock NUMERIC "4"
+// Retrieval info: PRIVATE: Depth NUMERIC "4096"
 // Retrieval info: PRIVATE: Empty NUMERIC "1"
 // Retrieval info: PRIVATE: Full NUMERIC "1"
 // Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
@@ -89,36 +98,41 @@ endmodule
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "1"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
 // Retrieval info: PRIVATE: wsFull NUMERIC "1"
-// Retrieval info: PRIVATE: wsUsedW NUMERIC "0"
+// Retrieval info: PRIVATE: wsUsedW NUMERIC "1"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
-// Retrieval info: CONSTANT: ADD_RAM_OUTPUT_REGISTER STRING "OFF"
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
-// Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "2048"
+// Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "4096"
 // Retrieval info: CONSTANT: LPM_SHOWAHEAD STRING "ON"
-// Retrieval info: CONSTANT: LPM_TYPE STRING "scfifo"
+// Retrieval info: CONSTANT: LPM_TYPE STRING "dcfifo"
 // Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "32"
-// Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "11"
+// Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "12"
 // Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
+// Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "5"
+// Retrieval info: CONSTANT: READ_ACLR_SYNCH STRING "OFF"
 // Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
-// Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
+// Retrieval info: CONSTANT: WRITE_ACLR_SYNCH STRING "ON"
+// Retrieval info: CONSTANT: WRSYNC_DELAYPIPE NUMERIC "5"
+// Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT GND "aclr"
 // Retrieval info: USED_PORT: data 0 0 32 0 INPUT NODEFVAL "data[31..0]"
-// Retrieval info: USED_PORT: empty 0 0 0 0 OUTPUT NODEFVAL "empty"
-// Retrieval info: USED_PORT: full 0 0 0 0 OUTPUT NODEFVAL "full"
 // Retrieval info: USED_PORT: q 0 0 32 0 OUTPUT NODEFVAL "q[31..0]"
+// Retrieval info: USED_PORT: rdclk 0 0 0 0 INPUT NODEFVAL "rdclk"
+// Retrieval info: USED_PORT: rdempty 0 0 0 0 OUTPUT NODEFVAL "rdempty"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
-// Retrieval info: USED_PORT: sclr 0 0 0 0 INPUT NODEFVAL "sclr"
-// Retrieval info: USED_PORT: usedw 0 0 11 0 OUTPUT NODEFVAL "usedw[10..0]"
+// Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
+// Retrieval info: USED_PORT: wrfull 0 0 0 0 OUTPUT NODEFVAL "wrfull"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
-// Retrieval info: CONNECT: @clock 0 0 0 0 clock 0 0 0 0
+// Retrieval info: USED_PORT: wrusedw 0 0 12 0 OUTPUT NODEFVAL "wrusedw[11..0]"
+// Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @data 0 0 32 0 data 0 0 32 0
+// Retrieval info: CONNECT: @rdclk 0 0 0 0 rdclk 0 0 0 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0
-// Retrieval info: CONNECT: @sclr 0 0 0 0 sclr 0 0 0 0
+// Retrieval info: CONNECT: @wrclk 0 0 0 0 wrclk 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
-// Retrieval info: CONNECT: empty 0 0 0 0 @empty 0 0 0 0
-// Retrieval info: CONNECT: full 0 0 0 0 @full 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 32 0 @q 0 0 32 0
-// Retrieval info: CONNECT: usedw 0 0 11 0 @usedw 0 0 11 0
+// Retrieval info: CONNECT: rdempty 0 0 0 0 @rdempty 0 0 0 0
+// Retrieval info: CONNECT: wrfull 0 0 0 0 @wrfull 0 0 0 0
+// Retrieval info: CONNECT: wrusedw 0 0 12 0 @wrusedw 0 0 12 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo.inc FALSE
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo.cmp FALSE

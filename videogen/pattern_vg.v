@@ -40,9 +40,6 @@ parameter	INTRAM_ADDR_WIDTH	=	18;		//	18	address lines
 //  Registers
 //=======================================================
 
-// State machine
-reg  [3:0]   read_state;
-
 // PRNG 
 reg load_init_pattern;
 reg next_pattern;
@@ -51,10 +48,11 @@ reg next_pattern;
 reg [B+FRACTIONAL_BITS-1:0] ramp_values; // 12-bit fractional end for ramp values 
 
 // Internal RAM
-reg [INTRAM_ADDR_WIDTH-1:0]  intram_address;
-reg [INTRAM_DATA_WIDTH-1:0]  intram_data_in;
+reg [INTRAM_ADDR_WIDTH-1:0] intram_address;
+reg [INTRAM_DATA_WIDTH-1:0] intram_data_in;
 
 // LPDDR2
+reg [3:0] read_state;
 reg [1:0] vsync;
 reg [1:0] hsync;
 		
@@ -73,18 +71,17 @@ reg [15:0] burst_count;
 
 wire [31:0] prng_data; 	// PRNG output
 wire [INTRAM_DATA_WIDTH-1:0] intram_q; // Internal RAM data output
-wire [10:0] fifo_used;
+wire [11:0] fifo_used;
 
-wire rdreq;
-wire wrreq;
+wire rdreq; // in FIFO show-ahead mode, this signal is a read acknowledge
+reg wrreq;
 
 
 //=======================================================
 //  Assignments
 //=======================================================
 
-assign rdreq = dn_in & !reset;
-assign wrreq = avl_readdatavalid & (read_state == 4'h3) & !reset;
+assign rdreq = dn_in & !reset; // only enable a read of the FIFO during the valid area of the screen
 
 
 //=======================================================
@@ -96,15 +93,16 @@ assign wrreq = avl_readdatavalid & (read_state == 4'h3) & !reset;
  * directly to the DE signal coming in, and not reset
  */
 fifo fifo_inst (
-	.sclr (fifo_clr),
-	.clock (clk_in),
+	.aclr (fifo_clr),
 	.data (fifo_data),
+	.rdclk (clk_in),
 	.rdreq (rdreq),
+	.wrclk (avl_clk),
 	.wrreq (wrreq),
 	.q (fifo_q),
-	.empty (),
-	.full (),
-	.usedw (fifo_used)
+	.rdempty (),
+	.wrfull (),
+	.wrusedw (fifo_used)
 	);
 	
 	
@@ -119,13 +117,13 @@ ca_prng prng (
 );
 
 // Internal RAM (1-port)
-/*int_ram	int_ram_inst (
+int_ram	int_ram_inst (
 	.address (intram_address),
 	.clock (clk_in),
 	.data (intram_data_in),
 	.wren (),
 	.q (intram_q)
-);*/
+);
 
  
 //=======================================================
@@ -275,7 +273,7 @@ always @ (posedge clk_in or posedge reset) begin
 			end
 		end
 	 end
-	 /*3'b110 : begin	// image (1920 x 1080, 1bpp packed, from internal BRAM)
+	 3'b110 : begin	// image (1920 x 1080, 1bpp packed, from internal BRAM)
 	   if (dn_in) begin
 			if (intram_q & (8'h80 >> ((x-1) % 8))) begin  // unpack image using a bitmask (x = current pixel on horizontal line)
 			  r_out <= 8'hC0; 	// silver/white (BSOD, text)
@@ -290,7 +288,7 @@ always @ (posedge clk_in or posedge reset) begin
 			  b_out <= 8'hab;
 			end
 		end
-	 end*/		 
+	 end	 
     3'b111 : begin	// image (1920 x 1080, 8bpp)		
 		 // dn_in is DE, this is high when actual frame data is needed
 		 if (dn_in) begin
@@ -302,7 +300,6 @@ always @ (posedge clk_in or posedge reset) begin
 	 endcase
   end
 end 
-  
   
  
 ////////////	LPDDR2 	////////////
@@ -316,6 +313,10 @@ begin
 	 avl_burstcount <= 8'd128;  //128 is the max, even though count is 8bit
 	 dat_count <= 7'h0;
 	 burst_count <= 16'h0;
+ 	 avl_address <= 27'h0;
+	 avl_read <= 1'b0;
+	 fifo_clr <= 1'b0;
+	 wrreq <= 1'b0;
   end else begin
   	 avl_burstcount <= avl_burstcount;  // Prevent inferring of latch
 	 vsync <= {vsync[0], vn_in};
@@ -333,15 +334,11 @@ begin
 			fifo_clr <= 1'b0;
 		end
 	 end
-	 /* I _THINK_ the LPDDR2 IP can take up to 8 burst requests, but the
-	  * docs on it are terrible and don't really explain it well.
-	  * Nor does it really cleanly explain how to tell if its done sending
-	  * data. So, lets do one at a time, since we have enough margin.
-	  */
-	 4'h1: begin //Start burst read
+	 4'h1: begin //Start single burst read
 		// avl_burstcount is always set to 128
 		// 15x 128 word bursts per line (32 bits per word, of which 24 bits are used for RGB)
-		if(!fifo_used[10]) begin  //If the FIFO is half full, wait
+		wrreq <= 1'b0;
+		if(!fifo_used[11]) begin  //If the FIFO is half full, wait
 			avl_read <= 1'b1;
 			avl_burstbegin <= 1'b1;
 			read_state <= 4'h2;
@@ -358,6 +355,7 @@ begin
 		if(avl_readdatavalid) begin // If data is valid
 			fifo_data <= avl_readdata;
 			dat_count <= dat_count + 1'b1;
+			wrreq <= 1'b1;
 			if(dat_count == 7'd127) begin //On THIS clock, we just got the 128th word
 			  avl_address <= avl_address + 'd128;
 			  // If this is the 16200th burst, its the last for this frame
@@ -366,6 +364,8 @@ begin
 			  else 
 				read_state <= 4'h1; // continue with this frame
 			end
+		end else begin
+			wrreq <= 1'b0;
 		end
 	 end
 	 default: read_state <= 4'h0;
@@ -375,7 +375,7 @@ end
 
 		
 ////////////	SRAM Address Generator	  ////////////
-/*always @ (negedge clk_in)
+always @ (negedge clk_in)
 begin	 
 	if(reset)
 	begin
@@ -394,6 +394,6 @@ begin
 				intram_address <= 0;
 	  end
 	end
-end*/
+end
 
 endmodule
