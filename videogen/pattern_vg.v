@@ -21,7 +21,7 @@ module pattern_vg (
 	input  wire [31:0]  avl_readdata,      	//       .readdata
 	output reg          avl_read,          	//       .read
 	output reg			  avl_burstbegin,			//			.burstbegin
-	output reg  [7:0]   avl_burstcount
+	output reg  [7:0]   avl_burstcount			// 		.burstcount
 	);
 	
 //=======================================================
@@ -60,7 +60,6 @@ reg [1:0] hsync;
 reg [31:0] fifo_data; 	// data written into fifo
 wire [31:0] fifo_q; 		// data read from fifo
 reg fifo_clr;				// asynchronous clear
-
 reg [6:0] dat_count;
 reg [15:0] burst_count;
 
@@ -130,16 +129,6 @@ int_ram	int_ram_inst (
 //  Structural coding
 //=======================================================
 
-/* Its debatable practice to use "always@() begin" rather than not using begin
- * and only using the "if(reset) ... else ... end" structure since it does not
- * inherently prevent people from adding code that can take place outside of
- * the reset/un-reset code paths which results in sequential logic that ALWAYS
- * gets run.
- *
- * Reset should also be in sensitivity list along with clock. Best practice is
- * is asynchronous reset, synchronous un-reset.  Adding reset to the
- * sensitivity list ensures peripherals receive an async reset.
- */
 always @ (posedge clk_in or posedge reset) begin 
   if (reset) begin
     /* There should always be a reset state defined for each signal that is
@@ -157,7 +146,7 @@ always @ (posedge clk_in or posedge reset) begin
     load_init_pattern <= 1'b0;
     next_pattern <= 1'b0;
   end else begin
-    vn_out <= vn_in; 
+    vn_out <= vn_in;
     hn_out <= hn_in; 
     den_out <= dn_in;
     
@@ -224,11 +213,6 @@ always @ (posedge clk_in or posedge reset) begin
 			else if (dn_in) 
 				ramp_values <= ramp_values + ramp_step; 
     end
-    /*3'b101 : begin	// tesselated rainbow pattern
-			r_out <= x;
-			g_out <= y;
-			b_out <= x + y;	 
-    end*/
 	 3'b101 : begin // color bar pattern
 	   if (dn_in) begin
 			if (x <= 275) begin // 100% white
@@ -289,8 +273,8 @@ always @ (posedge clk_in or posedge reset) begin
 			end
 		end
 	 end	 
-    3'b111 : begin	// image (1920 x 1080, 8bpp)		
-		 // dn_in is DE, this is high when actual frame data is needed
+    3'b111 : begin	// image (1920 x 1080, 8bpp, from external LPDDR2 SDRAM)		
+		 // dn_in is DE (Data Enable), this is high when actual frame data is needed for the visible part of the screen
 		 if (dn_in) begin
 			r_out <= fifo_q[23:16]; // get data from fifo and push to HDMI
 			g_out <= fifo_q[15:8];
@@ -310,7 +294,7 @@ begin
 	 vsync <= 2'b00;
 	 hsync <= 2'b00;
 	 read_state <= 4'h0;
-	 avl_burstcount <= 8'd128;  //128 is the max, even though count is 8bit
+	 avl_burstcount <= 8'd128;  // our burst size is 128 bytes, but register size is 8 bits
 	 dat_count <= 7'h0;
 	 burst_count <= 16'h0;
  	 avl_address <= 27'h0;
@@ -318,12 +302,12 @@ begin
 	 fifo_clr <= 1'b0;
 	 wrreq <= 1'b0;
   end else begin
-  	 avl_burstcount <= avl_burstcount;  // Prevent inferring of latch
+  	 avl_burstcount <= avl_burstcount;  // prevent inferring of latch
 	 vsync <= {vsync[0], vn_in};
 	 hsync <= {hsync[0], hn_in};
 	 
 	 case(read_state)
-	 4'h0: begin //Frame sync, FIFO, and AVL reset
+	 4'h0: begin // frame sync, FIFO, and AVL reset
 		avl_address <= 27'h0;
 		fifo_clr <= 1'b1;
 		burst_count <= 16'h0;
@@ -334,31 +318,31 @@ begin
 			fifo_clr <= 1'b0;
 		end
 	 end
-	 4'h1: begin //Start single burst read
+	 4'h1: begin // start single burst read
 		// avl_burstcount is always set to 128
 		// 15x 128 word bursts per line (32 bits per word, of which 24 bits are used for RGB)
 		wrreq <= 1'b0;
-		if(!fifo_used[11]) begin  //If the FIFO is half full, wait
+		if(!fifo_used[11]) begin  // If the FIFO is half full, wait so we avoid overflow
 			avl_read <= 1'b1;
 			avl_burstbegin <= 1'b1;
 			read_state <= 4'h2;
 			burst_count <= burst_count + 1'b1;
 		end
 	 end
-	 4'h2: begin // Wait for wait request from slave
+	 4'h2: begin // wait for wait request from slave
 		avl_burstbegin <= 1'b0;
 		avl_read <= 1'b0;
-		if(avl_waitrequest_n) // If read is done, go to the next state
+		if(avl_waitrequest_n) // if read is done, go to the next state
 		  read_state <= 4'h3;
 	 end
-	 4'h3: begin //Latch in data to the FIFO
-		if(avl_readdatavalid) begin // If data is valid
+	 4'h3: begin // latch in data to the FIFO
+		if(avl_readdatavalid) begin // if data is valid...
 			fifo_data <= avl_readdata;
 			dat_count <= dat_count + 1'b1;
 			wrreq <= 1'b1;
-			if(dat_count == 7'd127) begin //On THIS clock, we just got the 128th word
+			if(dat_count == 7'd127) begin // on THIS clock, we just got the 128th word
 			  avl_address <= avl_address + 'd128;
-			  // If this is the 16200th burst, its the last for this frame
+			  // if this is the 16200th burst, its the last for this frame
 			  if(burst_count > 16'd16199) 
 				read_state <= 4'h0; // go back to idle until the next frame
 			  else 

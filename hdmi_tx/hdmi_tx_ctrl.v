@@ -1,26 +1,6 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    11:59:22 02/16/2016 
-// Design Name: 
-// Module Name:    transceiver_ctrl 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
-//
-// Dependencies: 
-//
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-//////////////////////////////////////////////////////////////////////////////////
 
 `define TXBASE    8'h72
-
 
 module hdmi_tx_ctrl(
 	input wire clk,
@@ -35,6 +15,7 @@ module hdmi_tx_ctrl(
 reg ready = 0;
 reg [23:0] startup_delay = 0;
 
+// start-up delay before sending I2C configuration data to HDMI TX
 always @(posedge clk) begin
 	if (reset) begin
 		ready <= #1 0;

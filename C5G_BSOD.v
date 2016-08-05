@@ -89,8 +89,8 @@ reg state;
 //=======================================================
 
 wire altclk_out;
-wire hdmi_tx_clk_148_5;
-wire hdmi_tx_clk_297; // 2x PCLK for use w/ LPDDR2 port 1 clock
+wire hdmi_tx_clk_148_5;  // PCLK for driving HDMI TX
+wire hdmi_tx_clk_297;    // 2x PCLK for use w/ LPDDR2 port 1 clock
 wire hdmi_tx_pll_locked;
 
 // LPDDR2
@@ -108,7 +108,7 @@ wire test_global_reset_n;
 wire test_soft_reset_n;
 wire test_start_n;  
 
-wire         	fpga_lpddr2_avl_0_ready;       	// avl_0.waitrequest_n
+wire         	fpga_lpddr2_avl_0_ready;        // avl_0.waitrequest_n
 wire         	fpga_lpddr2_avl_0_burstbegin;   //    .beginbursttransfer
 wire 	[26:0]  	fpga_lpddr2_avl_0_addr;         //    .address
 wire         	fpga_lpddr2_avl_0_rdata_valid;  //    .readdatavalid
@@ -118,7 +118,7 @@ wire         	fpga_lpddr2_avl_0_read_req;     //    .read
 wire         	fpga_lpddr2_avl_0_write_req;    //    .write
 wire 	[2:0]		fpga_lpddr2_avl_0_size;         //    .burstcount
 
-wire         	fpga_lpddr2_avl_1_ready;       	// avl_1.waitrequest_n
+wire         	fpga_lpddr2_avl_1_ready;        // avl_1.waitrequest_n
 wire         	fpga_lpddr2_avl_1_burstbegin;   //    .beginbursttransfer
 wire 	[26:0]  	fpga_lpddr2_avl_1_addr;         //    .address
 wire         	fpga_lpddr2_avl_1_rdata_valid;  //    .readdatavalid
@@ -130,6 +130,7 @@ wire 	[7:0]		fpga_lpddr2_avl_1_size;         //    .burstcount
 
 wire RXnTX;
 wire test_software_reset_n;
+
 
 //=======================================================
 //  Assignments
@@ -177,7 +178,7 @@ hdmi_tx_ctrl hdmi_tx (
 // Video Generator
 top_sync_vg_pattern vg (
 	.clk_in(hdmi_tx_clk_148_5), 		// PCLK (148.5MHz) sent into video generator
-	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_complete),	// Start if TX mode selected and PLL is locked 
+	.resetb(CPU_RESET_n & hdmi_tx_pll_locked & !RXnTX & fpga_lpddr2_test_complete),	// Start if PLL is locked, TX mode selected, and LPDDR2 filling is complete 
 	.adv7513_hs(HDMI_TX_HS),     		// HS (HSync) 
 	.adv7513_vs(HDMI_TX_VS),       	// VS (VSync)
 	.adv7513_clk(HDMI_TX_CLK),		   // PCLK

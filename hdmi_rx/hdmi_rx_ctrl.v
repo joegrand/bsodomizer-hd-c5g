@@ -1,24 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    11:59:22 02/16/2016 
-// Design Name: 
-// Module Name:    receiver_ctrl 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
-//
-// Dependencies: 
-//
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module hdmi_rx_ctrl(
 	input wire clk,
@@ -31,6 +11,7 @@ module hdmi_rx_ctrl(
 reg ready = 0;
 reg [23:0] startup_delay = 0;
 
+// start-up delay before sending I2C configuration data to HDMI RX
 always @(posedge clk) begin
 	if (reset) begin
 		ready <= #1 0;

@@ -74,6 +74,7 @@ reg de_in;
 //=======================================================
 //  Structural coding
 //=======================================================
+assign drv_status_test_complete = (c_state == 9) ? 1 : 0;  // Signal to the top module that this module is done
 assign avl_burstbegin = avl_write;
 		
 
@@ -96,7 +97,7 @@ always @(posedge adv7611_clk or negedge resetb) begin
    end
 end
 
-	
+// Write data into LPDDR2
 always@(posedge iCLK or negedge iRST_n)
 begin
 	if (!iRST_n) begin 
@@ -110,19 +111,19 @@ begin
 		trigger <= !pre_button[0] && pre_button[1];
 
 	  case (c_state)
-	  	0 : begin //idle
+	  	0 : begin // idle
 	  		avl_address <= {ADDR_W{1'b0}};
 	  		if (local_init_done && trigger)
 	  			c_state <= 1;
 	  	end
-	  	1 : begin //write
+	  	1 : begin // begin data write fo LPDDR2 
 			// horizontal bars, split screen
 			/*if (avl_address < ('d1920 * 'd1080) / 2) 
 				avl_writedata <= 32'h0055AA55; // top 
 			else
 				avl_writedata <= 32'h00BB6666; // bottom*/
 			
-			// horizontal bars (4)
+			// horizontal bars, multiple
 			if (avl_address <= 27'h7E900)  
 				avl_writedata <= 32'h00FF0000; // quarter 1
 			else if (avl_address >= 27'h7E901 && avl_address <= 27'hFD200)
@@ -150,7 +151,7 @@ begin
 		   avl_write <= 1'b1;
 			c_state <= 2;
 	  	end
-	  	2 : begin //finish write one data
+	  	2 : begin // wait until write is complete
 	  		if (avl_waitrequest_n)
 	  		begin
 	  			avl_write <= 1'b0;
@@ -158,12 +159,12 @@ begin
 	  		end
 	  	end
 	  	3 : begin
-	  	  if (avl_address == ('d1920 * 'd1080) - 1) //finish write all (burst) 
+	  	  if (avl_address == ('d1920 * 'd1080) - 1) // check to see if we're done writing the entire frame 
 	  		begin
 	  			avl_address <= {ADDR_W{1'b0}};
 	  			c_state <= 9;
 	  		end
-	  		else //write the next data
+	  		else // if not, increment to the next address and write again!
 	  		begin
 	  			avl_address <= avl_address + 1'b1;
 	  			c_state <= 1;
@@ -175,7 +176,4 @@ begin
   end
 end
 		
-// test result
-assign drv_status_test_complete = (c_state == 9) ? 1 : 0;
-
 endmodule 
